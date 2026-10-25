@@ -1,0 +1,194 @@
+{
+  "schema_version": "1.0",
+  "kind": "declarative",
+  "entrypoint": "../../../skills/supervisor/SKILL.md",
+  "default_profile": "develop",
+  "cadence": "manual",
+  "permissions_source": "AGENTS.md e autorização vigente da sessão",
+  "profiles": {
+    "main": {
+      "adoption": "padrão do template; não usado neste projeto",
+      "base": "main",
+      "work_branch": "codex/<assunto>",
+      "review_target": "main",
+      "final_branch": "main",
+      "intermediate_integration": false
+    },
+    "develop": {
+      "adoption": "adotado neste projeto em 2026-10-25",
+      "base": "develop",
+      "work_branch": "<tipo>/<tarefa>-<assunto>",
+      "review_target": "develop",
+      "final_branch": "main",
+      "intermediate_integration": true,
+      "stages": {
+        "dev": "branch develop",
+        "hml": "branch main (pull request de develop)",
+        "prd": "tag v*.*.* em main"
+      }
+    },
+    "artifacts": {
+      "adoption": "projeto sem Git; identificar versões por hash",
+      "base": null,
+      "work_branch": null,
+      "review_target": null,
+      "final_branch": null,
+      "intermediate_integration": false
+    }
+  },
+  "roles": {
+    "supervisor": {
+      "prompt": "supervisor.md",
+      "skill": "../../../skills/supervisor/SKILL.md",
+      "responsibility": "entrada, reconciliação, planejamento e despacho"
+    },
+    "developer": {
+      "prompt": "developer.md",
+      "skill": "../../../skills/developer/SKILL.md",
+      "responsibility": "implementação e correções"
+    },
+    "reviewer": {
+      "prompt": "reviewer.md",
+      "skill": "../../../skills/reviewer/SKILL.md",
+      "responsibility": "revisão técnica independente"
+    },
+    "qa": {
+      "prompt": "qa.md",
+      "skill": "../../../skills/qa/SKILL.md",
+      "responsibility": "validação funcional da entrega"
+    }
+  },
+  "lifecycle": {
+    "create": "../../../skills/project-create/SKILL.md",
+    "bootstrap": "../../../skills/project-bootstrap/SKILL.md",
+    "update": "../../../skills/project-update/SKILL.md"
+  },
+  "states": [
+    "entrada",
+    "preparacao",
+    "implementacao",
+    "revisao",
+    "correcao",
+    "composicao",
+    "candidato",
+    "qa",
+    "bloqueado",
+    "decisao_humana",
+    "concluido"
+  ],
+  "transitions": [
+    {
+      "from": "entrada",
+      "to": "preparacao",
+      "owner": "supervisor",
+      "condition": "objetivo e modo identificados"
+    },
+    {
+      "from": "preparacao",
+      "to": "implementacao",
+      "owner": "supervisor",
+      "condition": "base, tarefa, critérios e autorização suficientes"
+    },
+    {
+      "from": "implementacao",
+      "to": "revisao",
+      "owner": "developer",
+      "condition": "mudança e evidência disponíveis"
+    },
+    {
+      "from": "revisao",
+      "to": "correcao",
+      "owner": "reviewer",
+      "condition": "achados reproduzíveis"
+    },
+    {
+      "from": "correcao",
+      "to": "revisao",
+      "owner": "developer",
+      "condition": "correção validada no novo candidato"
+    },
+    {
+      "from": "revisao",
+      "to": "composicao",
+      "owner": "supervisor",
+      "condition": "parecer técnico apto; integração intermediária somente quando adotada e autorizada"
+    },
+    {
+      "from": "composicao",
+      "to": "implementacao",
+      "owner": "supervisor",
+      "condition": "tarefas da entrega ainda faltam"
+    },
+    {
+      "from": "composicao",
+      "to": "candidato",
+      "owner": "supervisor",
+      "condition": "entrega completa"
+    },
+    {
+      "from": "candidato",
+      "to": "qa",
+      "owner": "supervisor",
+      "condition": "versões, ambiente, história e dados fixados"
+    },
+    {
+      "from": "qa",
+      "to": "correcao",
+      "owner": "qa",
+      "condition": "defeito funcional registrado como tarefa"
+    },
+    {
+      "from": "qa",
+      "to": "bloqueado",
+      "owner": "qa",
+      "condition": "dependência ou decisão impede validação"
+    },
+    {
+      "from": "bloqueado",
+      "to": "candidato",
+      "owner": "supervisor",
+      "condition": "dependência resolvida; versões reconciliadas"
+    },
+    {
+      "from": "qa",
+      "to": "decisao_humana",
+      "owner": "qa",
+      "condition": "critérios comprovados no candidato"
+    },
+    {
+      "from": "decisao_humana",
+      "to": "candidato",
+      "owner": "supervisor",
+      "condition": "candidato mudou ou responsável pediu nova validação"
+    },
+    {
+      "from": "decisao_humana",
+      "to": "concluido",
+      "owner": "human",
+      "condition": "decisão aplicável confirmada e efeito verificado"
+    }
+  ],
+  "evidence": {
+    "handoff": "../../templates/passagem-de-papel.md",
+    "candidate": "../../templates/candidato.md",
+    "story": "../../templates/historia-de-uso.md",
+    "reports": "../../evidence",
+    "stories": "../../historias",
+    "tasks": "../../tasks",
+    "candidate_identity": "SHA por repositório e hashes das alterações locais, ou hashes de artefatos sem Git",
+    "invalidation": [
+      "conteúdo",
+      "base",
+      "ambiente",
+      "história",
+      "dados relevantes"
+    ],
+    "review_requires_fresh_context": true
+  },
+  "automatic_external_actions": [],
+  "notes": [
+    "Não instala agentes, concede permissões, ativa agendamento ou executa o ciclo.",
+    "Papéis herdam as escolhas da sessão; modelo e esforço são decisões de cada projeto.",
+    "PR, Git, ambiente hospedado e ferramentas específicas não são obrigatórios para artefatos."
+  ]
+}

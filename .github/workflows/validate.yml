@@ -1,0 +1,53 @@
+name: Validate template
+
+on:
+  push:
+    branches: [develop, main]
+    tags: ['v*.*.*']
+  pull_request:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required files
+        run: |
+          test -f AGENTS.md
+          test -f CLAUDE.md
+          test -f README.md
+          test -d docs
+          test -d evals
+          test -d skills
+          test -d tools
+
+      - name: Validate skill files
+        shell: bash
+        run: |
+          set -e
+          for file in skills/*/SKILL.md; do
+            grep -q "^name:" "$file"
+            grep -q "^description:" "$file"
+          done
+
+      # As etapas de Python só rodam quando o projeto tem pyproject.toml.
+      - name: Set up Python
+        if: ${{ hashFiles('pyproject.toml') != '' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install project with dev dependencies
+        if: ${{ hashFiles('pyproject.toml') != '' }}
+        run: python -m pip install -e ".[dev]"
+
+      - name: Run strict validation (pytest and ruff)
+        if: ${{ hashFiles('pyproject.toml') != '' }}
+        run: python tools/scripts/lint_and_tests.py --strict

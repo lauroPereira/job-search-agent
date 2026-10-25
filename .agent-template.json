@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "template_name": "ai-dev-template",
+  "template_version": "0.3.0",
+  "description": "Agente com chat e dashboards para gestão de busca de emprego, cliente do servidor job-search-mcp.",
+  "managed_paths": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".claude/skills",
+    ".agents/skills",
+    "skills",
+    "docs/templates",
+    "docs/wiki/agents",
+    "docs/historias/README.md",
+    "docs/evidence/README.md",
+    "docs/specs/README.md",
+    "docs/tasks/README.md",
+    "docs/architecture/README.md",
+    "docs/architecture/decisions/.gitkeep",
+    "evals/tasks",
+    "evals/expected",
+    "tools/scripts"
+  ],
+  "project_owned_paths": [
+    "README.md",
+    "pyproject.toml",
+    "src",
+    "tests",
+    "data/seed",
+    "data/knowledge",
+    "evals/agent",
+    "docs/specs/*.md",
+    "docs/tasks/*.md",
+    "docs/historias/*.md",
+    "docs/evidence/*",
+    "docs/wiki/origem-template.md",
+    "docs/architecture/decisions/*.md"
+  ],
+  "optional_components": [
+    "sdd"
+  ],
+  "update_policy": "explicit-review-required"
+}
