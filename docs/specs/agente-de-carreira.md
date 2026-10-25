@@ -102,4 +102,4 @@ Uma aplicação local com um dashboard e um chat. O chat aceita pedidos em lingu
 ## Questões em aberto
 
 - **Q1. Embeddings:** decidido pelo autor em 2026-10-25: pela API da OpenAI. Consequência: os documentos indexados são enviados ao provedor; os dados pessoais que não forem necessários à busca são mascarados antes da indexação.
-- **Q2. Modelos:** quais modelos da OpenAI para roteamento e para redação, conferidos no catálogo e nos preços do momento do plano. Responsável: plano técnico.
+- **Q2. Modelos:** resolvida no [plano técnico](agente-de-carreira-plano.md) com o catálogo e os preços da OpenAI de 2026-10-25: `gpt-6-luna` para roteamento, `gpt-6.1-sol` para os agentes de domínio (ferramentas e redação) e `text-embedding-3-small` para embeddings, pela Responses API; nomes e preços ficam na configuração. A confirmação por chamada real é feita na primeira tarefa.
