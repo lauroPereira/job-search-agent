@@ -20,7 +20,7 @@ Criar o pacote Python `job_search_agent` com dependências fixadas, configuraç�
 ## Passos
 
 1. Criar `pyproject.toml` (Python 3.12, `src/`, dependências com `==` do plano, `job-search-mcp` pelo commit fixado, extra `dev`, script `job-search-agent`, configuração de `ruff` e `pytest`).
-2. Criar `config.example.toml` com modelos, esforço de raciocínio, tabela de preços, limites, caminhos em `data/local/`, comando do servidor e `JOB_SEARCH_DB` / `JOB_SEARCH_CONFIG`; e `.env.example` com `OPENAI_API_KEY=`.
+2. Criar `config.example.toml` com modelos, esforço de raciocínio, tabela de preços, limites, caminhos em `data/local/`, comando do servidor, `JOB_SEARCH_DB` / `JOB_SEARCH_CONFIG`, `[masking] names` com os nomes fictícios do seed e `[demo] reference_date = "2026-03-16"`; e `.env.example` com `OPENAI_API_KEY=`.
 3. Garantir no `.gitignore` `config.toml` e `data/local/` (já presente).
 4. Implementar `config.py` (lê `config.toml`, falha clara para preço ausente, limite inválido ou caminho relativo do banco).
 5. Implementar `llm.py` com `chat_model(role)` e `embeddings()` usando `ChatOpenAI(use_responses_api=True)` e `OpenAIEmbeddings`; nenhum outro módulo importa `langchain_openai`.

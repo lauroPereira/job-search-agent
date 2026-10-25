@@ -96,10 +96,13 @@ Uma aplicação local com um dashboard e um chat. O chat aceita pedidos em lingu
 - **Dados pessoais enviados ao provedor** no uso real. Mitigação: enviar só o necessário, mascarar dados pessoais, inclusive antes de gerar embeddings (Q1).
 - **Custo do modelo.** Mitigação: limites por turno e por dia, dashboard sem modelo, custo visível.
 - **Avaliação frágil:** mitigação: avaliar principalmente roteamento, ferramentas e argumentos (determinísticos).
-- **Dependência da `v0.2.0` do servidor:** o agente é construído contra a especificação e testado com servidor simulado até a versão sair.
+- **Dependência da `v0.2.0` do servidor:** o agente é testado com o servidor real, iniciado com o seed sintético num banco temporário, fixado no commit de `develop` que contém a versão 0.2.0 até a tag `v0.2.0` existir (Q5 do plano).
 - **Mudança frequente de LangChain, LangGraph e Streamlit:** versões fixadas e conferidas antes de cada tarefa.
 
 ## Questões em aberto
 
 - **Q1. Embeddings:** decidido pelo autor em 2026-10-25: pela API da OpenAI. Consequência: os documentos indexados são enviados ao provedor; os dados pessoais que não forem necessários à busca são mascarados antes da indexação.
 - **Q2. Modelos:** resolvida no [plano técnico](agente-de-carreira-plano.md) com o catálogo e os preços da OpenAI de 2026-10-25: `gpt-6-luna` para roteamento, `gpt-6.1-sol` para os agentes de domínio (ferramentas e redação) e `text-embedding-3-small` para embeddings, pela Responses API; nomes e preços ficam na configuração. A confirmação por chamada real é feita na primeira tarefa.
+- **Q3. Leitura de apoio entre domínios:** exceção proposta pelo Supervisor, pendente de aceite do autor. O agente de Vagas lê `list_contacts` (filtro por empresa) e `network_company_overview` para dizer quem da rede está na empresa (caso de uso 3); a escrita continua exclusiva de cada domínio. O critério "cada agente só vê as ferramentas do seu domínio" é verificado contra a tabela de ferramentas do [plano](agente-de-carreira-plano.md).
+- **Q4. Origem da interação:** exceção proposta pelo Supervisor, pendente de aceite do autor. `log_interaction` não tem o parâmetro `source` no servidor `v0.2.0`; na v0.1, a origem de uma interação registrada fica no rastro do agente, e o parâmetro será pedido numa próxima versão do servidor. As demais escritas enviam a origem ao servidor.
+- **Q5 e Q6:** referência do servidor até a tag `v0.2.0` e valores iniciais dos limites de tokens, decididas pelo Supervisor e registradas no [plano](agente-de-carreira-plano.md#questões-em-aberto).

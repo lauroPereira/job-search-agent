@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Criar os documentos sintéticos, indexá-los com mascaramento em um `InMemoryVectorStore` persistido em arquivo e oferecer a ferramenta `search_knowledge` com citação de fonte.
+Criar os documentos sintéticos, indexá-los com mascaramento em um `InMemoryVectorStore` persistido em arquivo e oferecer a ferramenta `search_knowledge` com citação de fonte, tudo em `knowledge.py`.
 
 ## Especificação relacionada
 
@@ -10,11 +10,11 @@ Criar os documentos sintéticos, indexá-los com mascaramento em um `InMemoryVec
 
 ## Pré-condições
 
-Tarefas 01 a 03 concluídas (configuração, cliente MCP para os nomes conhecidos e mascaramento).
+Tarefas 01 e 03 concluídas (configuração e mascaramento).
 
 ## Arquivos prováveis
 
-`data/knowledge/*.md` (12 a 15 arquivos sintéticos), `src/job_search_agent/knowledge.py`, `tests/test_knowledge.py`.
+`data/knowledge/*.md` (12 a 15 arquivos sintéticos), `src/job_search_agent/knowledge.py`, `src/job_search_agent/cli.py` (comando `index`), `tests/test_knowledge.py`.
 
 ## Passos
 
@@ -27,7 +27,7 @@ Tarefas 01 a 03 concluídas (configuração, cliente MCP para os nomes conhecido
 ## Critérios de conclusão
 
 - [ ] Teste com embeddings simuladas: indexar, gravar, recarregar e buscar devolve `source` e `heading`.
-- [ ] Teste: um nome de pessoa do seed e um e-mail no documento não aparecem no texto enviado aos embeddings.
+- [ ] Teste: um nome da lista `[masking] names` e um e-mail no documento não aparecem no texto enviado aos embeddings.
 - [ ] Teste: consulta sem relação devolve "sem base suficiente".
 - [ ] Busca nos documentos versionados não encontra e-mail, telefone ou CPF.
 
