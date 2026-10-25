@@ -22,12 +22,13 @@ O projeto precisa de uma interface com dashboard e chat, de agentes que consomem
 - **Agentes:** LangGraph para o grafo (supervisor, agentes de domínio e pausa para aprovação humana); LangChain para a integração com o modelo, a busca semântica e o adaptador de MCP.
 - **Modelos:** API da OpenAI, isolada atrás de uma interface do projeto. Modelo menor para roteamento e classificação; modelo maior só onde a qualidade exigir. Os nomes são escolhidos no plano, conferindo catálogo e preços do momento.
 - **Base vetorial:** local, em arquivo dentro de `data/local/`, sem serviço externo. A biblioteca é escolhida no plano.
+- **Embeddings:** pela API da OpenAI (decidido em 2026-10-25), com mascaramento de dados pessoais antes da indexação.
 - **Rastro:** gravado localmente (SQLite) e mostrado na própria aplicação; Langfuse fica para a próxima entrega.
 
 ## Alternativas consideradas
 
 - **API da Anthropic (Claude).** Adiada: o autor já tem créditos na OpenAI; a interface em volta do provedor mantém a troca possível.
-- **Modelo local.** Descartado para a v0.1: qualidade menor na escolha de ferramentas e mais configuração. Pode voltar para embeddings.
+- **Modelo local.** Descartado para a v0.1, inclusive para embeddings: qualidade menor na escolha de ferramentas e mais configuração.
 - **Interface web própria (React ou similar).** Descartada: mais código sem ganho para o objetivo.
 - **Base vetorial ou rastreamento gerenciados na nuvem.** Descartados: dados pessoais sairiam da máquina e haveria custo fixo.
 

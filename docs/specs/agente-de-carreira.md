@@ -93,7 +93,7 @@ Uma aplicação local com um dashboard e um chat. O chat aceita pedidos em lingu
 ## Riscos
 
 - **Escopo para um case curto:** mitigado pelo corte (dois domínios, cinco fluxos, um dashboard) e pela próxima entrega separada.
-- **Dados pessoais enviados ao provedor** no uso real. Mitigação: enviar só o necessário, mascarar dados pessoais e decidir os embeddings (Q1).
+- **Dados pessoais enviados ao provedor** no uso real. Mitigação: enviar só o necessário, mascarar dados pessoais, inclusive antes de gerar embeddings (Q1).
 - **Custo do modelo.** Mitigação: limites por turno e por dia, dashboard sem modelo, custo visível.
 - **Avaliação frágil:** mitigação: avaliar principalmente roteamento, ferramentas e argumentos (determinísticos).
 - **Dependência da `v0.2.0` do servidor:** o agente é construído contra a especificação e testado com servidor simulado até a versão sair.
@@ -101,5 +101,5 @@ Uma aplicação local com um dashboard e um chat. O chat aceita pedidos em lingu
 
 ## Questões em aberto
 
-- **Q1. Embeddings:** pela API da OpenAI (simples, envia o texto ao provedor) ou modelo local (dados não saem da máquina, mais dependências). Responsável: autor.
+- **Q1. Embeddings:** decidido pelo autor em 2026-10-25: pela API da OpenAI. Consequência: os documentos indexados são enviados ao provedor; os dados pessoais que não forem necessários à busca são mascarados antes da indexação.
 - **Q2. Modelos:** quais modelos da OpenAI para roteamento e para redação, conferidos no catálogo e nos preços do momento do plano. Responsável: plano técnico.
