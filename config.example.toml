@@ -1,0 +1,75 @@
+# Exemplo de configuração local do job-search-agent (valores fictícios).
+#
+# Copie para config.toml na raiz do projeto (ignorado pelo Git). Todas as chaves são
+# obrigatórias, salvo indicação. A chave da OpenAI não fica aqui: vai em .env
+# (OPENAI_API_KEY), também fora do Git.
+
+[models]
+# Nomes dos modelos da OpenAI por papel (ver o plano técnico).
+router = "gpt-6-luna"
+agent = "gpt-6.1-sol"
+embeddings = "text-embedding-3-small"
+
+[reasoning]
+# Esforço de raciocínio por papel de modelo de chat.
+router = "low"
+agent = "medium"
+
+# Preço em US$ por 1 milhão de tokens. Todo modelo de [models] precisa de preço:
+# modelo sem preço impede a partida (para não mostrar custo zero por engano).
+# Modelos de chat: input, cached_input e output. Embeddings: input.
+[pricing."gpt-6-luna"]
+input = 0.10
+cached_input = 0.01
+output = 0.50
+
+[pricing."gpt-6.1-sol"]
+input = 2.00
+cached_input = 0.10
+output = 10.00
+
+[pricing."text-embedding-3-small"]
+input = 0.02
+
+[limits]
+# Valor de referência por turno, comparado com o uso real.
+max_tokens_per_turn = 40000
+# Limite do dia, conferido antes de cada turno.
+max_tokens_per_day = 400000
+# Passos de um agente por turno (cerca de metade são chamadas de modelo).
+recursion_limit = 12
+# Tokens de saída por chamada de modelo.
+max_output_tokens = 2000
+
+[paths]
+# Arquivos locais do agente; caminhos relativos partem da raiz do projeto.
+checkpoints = "data/local/checkpoints.db"
+traces = "data/local/traces.db"
+knowledge_index = "data/local/knowledge_index.json"
+knowledge_dir = "data/knowledge"
+
+[server]
+# Executável do servidor job-search-mcp (instalado no mesmo ambiente virtual).
+command = "job-search-mcp"
+# Banco do servidor, passado como JOB_SEARCH_DB. Caminho ABSOLUTO obrigatório.
+JOB_SEARCH_DB = "C:/caminho/absoluto/para/job-search-agent/data/local/job_search.db"
+# Opcional: configuração do servidor, passada como JOB_SEARCH_CONFIG (caminho absoluto).
+# JOB_SEARCH_CONFIG = "C:/caminho/absoluto/para/job-search-mcp.toml"
+
+[masking]
+# Nomes de pessoas trocados por [pessoa] antes dos embeddings e no rastro.
+# Na demonstração, os nomes fictícios do seed do servidor; no uso real, preencha localmente.
+names = [
+    "Ana Exemplo",
+    "Bruno Modelo",
+    "Carla Fictícia",
+    "Diego Amostra",
+    "Elisa Teste",
+    "Fábio Demonstração",
+    "Gabriela Ensaio",
+    "Heitor Simulado",
+]
+
+[demo]
+# Data de referência da demonstração: a data do seed do servidor.
+reference_date = "2026-03-16"

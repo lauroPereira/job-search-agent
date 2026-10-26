@@ -22,7 +22,7 @@ Consultadas em **2026-10-25** no PyPI (`https://pypi.org/pypi/<pacote>/json`) e 
 | `langchain-openai` | 1.7.2 | 2026-10-14 | `ChatOpenAI` (Responses API) e `OpenAIEmbeddings` |
 | `streamlit` | 1.66.1 | 2026-10-21 | interface |
 | `python-dotenv` | 1.2.4 | 2026-10-01 | `OPENAI_API_KEY` em `.env` local |
-| `job-search-mcp` | commit `a5377b1752d319a11417769f4d1f7665ff3f6cc0` de `develop` (versão 0.2.0) | — | servidor MCP; trocar pela tag `v0.2.0` quando ela existir |
+| `job-search-mcp` | tag `v0.2.0` (versão 0.2.0) | — | servidor MCP; fixado na tag desde a tarefa 01 (Q5) |
 | `pytest` (dev) | 9.1.1 | 2026-06-19 | testes |
 | `pytest-asyncio` (dev) | 1.4.0 | 2026-05-26 | testes assíncronos |
 | `ruff` (dev) | 0.17.2 | 2026-10-22 | lint |
@@ -34,10 +34,10 @@ Dependências transitivas (`openai`, `fastmcp`, `aiosqlite`, `numpy`) ficam com 
 O agente depende do [job-search-mcp](https://github.com/lauroPereira/job-search-mcp) como pacote Python instalado do Git, no mesmo ambiente virtual:
 
 ```toml
-"job-search-mcp @ git+https://github.com/lauroPereira/job-search-mcp@a5377b1752d319a11417769f4d1f7665ff3f6cc0"
+"job-search-mcp @ git+https://github.com/lauroPereira/job-search-mcp.git@v0.2.0"
 ```
 
-- Hoje o servidor só tem a tag `v0.1.0`; a `v0.2.0` está em `develop` (`__version__ = "0.2.0"`), ainda sem tag. A referência fica neste commit até a tag `v0.2.0` existir sobre `main` (Q5); a troca é feita na tarefa 10, com os testes de integração rodando de novo.
+- A referência é a tag pública `v0.2.0` do servidor (Q5, resolvida na tarefa 01). Antes da tag, o plano fixava o commit `a5377b1` de `develop`.
 - O servidor fixa `fastmcp==4.1.0`, compatível com a faixa exigida por `langchain[mcp]`. Se um dia divergirem, o servidor roda em ambiente próprio e o agente só aponta o executável na configuração.
 - O agente inicia o servidor por stdio (`job-search-mcp`), com `JOB_SEARCH_DB` e, opcionalmente, `JOB_SEARCH_CONFIG` por caminho absoluto. O processo do servidor só recebe as variáveis passadas em `env` (o FastMCP não repassa o ambiente inteiro): a chave da OpenAI não chega ao servidor.
 - Testes de integração, a avaliação e o CI sobem o **servidor real** com `job-search-mcp --seed` num banco temporário. Não há servidor simulado: a `v0.2.0` já existe em `develop`.
@@ -244,7 +244,7 @@ Também: mascaramento (unidade); confirmação grava (integração); duas propos
 - **Reexecução do nó de aprovação:** o código antes do `interrupt` roda de novo na retomada. Mitigação: `interrupt` como primeira instrução e efeitos só depois.
 - **Limite por turno aproximado:** o teto vem de passos e saída por chamada, não de um corte exato em tokens. Aceito: o uso real é medido e mostrado.
 - **Avaliação simulada vira teatro:** mitigação: o CI mede o harness e diz isso; a qualidade vem do resultado real versionado.
-- **Dependência fixada por commit:** a `v0.2.0` ainda não tem tag. Mitigação: SHA explícito até a tag (Q5).
+- **Dependência fixada por tag:** resolvida na tarefa 01; a dependência aponta para a tag `v0.2.0` (Q5).
 - **Envio de texto ao provedor no uso real:** mitigado pelo mascaramento e pelo envio só do necessário; o uso real com dados pessoais fica para depois da v1, como diz a especificação.
 
 ## Plano de implementação
@@ -264,7 +264,7 @@ Uma tarefa por etapa, na ordem, cada uma com PR próprio para `develop`. Antes d
 
 ## Questões em aberto
 
-- **Q3. Leitura de apoio entre domínios** (exceção proposta pelo Supervisor, pendente de aceite do autor; registrada na especificação): o agente de Vagas recebe `list_contacts` (filtro `company`) e `network_company_overview` só para leitura, para o fluxo "avaliar vaga" dizer quem da rede está na empresa; escrita continua exclusiva do domínio.
-- **Q4. Origem em `log_interaction`** (exceção proposta pelo Supervisor, pendente de aceite do autor; registrada na especificação): a ferramenta não tem `source` na `v0.2.0`. Na v0.1, a origem da interação fica no rastro do agente; o parâmetro será pedido numa próxima versão do servidor.
-- **Q5. Tag `v0.2.0` do servidor:** decisão do Supervisor: manter o commit `a5377b1` até a tag existir; a troca é passo da tarefa 10.
+- **Q3. Leitura de apoio entre domínios** (exceção proposta pelo Supervisor; aceita pelo Supervisor para implementação em 2026-10-25, pendente de confirmação formal do autor; registrada na especificação): o agente de Vagas recebe `list_contacts` (filtro `company`) e `network_company_overview` só para leitura, para o fluxo "avaliar vaga" dizer quem da rede está na empresa; escrita continua exclusiva do domínio.
+- **Q4. Origem em `log_interaction`** (exceção proposta pelo Supervisor; aceita pelo Supervisor para implementação em 2026-10-25, pendente de confirmação formal do autor; registrada na especificação): a ferramenta não tem `source` na `v0.2.0`. Na v0.1, a origem da interação fica no rastro do agente; o parâmetro será pedido numa próxima versão do servidor.
+- **Q5. Tag `v0.2.0` do servidor:** resolvida. A tag `v0.2.0` foi publicada no servidor; na tarefa 01 a dependência passou do commit `a5377b1` para a tag (`job-search-mcp @ git+https://github.com/lauroPereira/job-search-mcp.git@v0.2.0`), por decisão do Supervisor. O passo correspondente da tarefa 10 deixa de ser necessário.
 - **Q6. Valores dos limites:** decisão do Supervisor: manter os valores iniciais (40.000 tokens de referência por turno, `recursion_limit` 12, 2.000 tokens de saída por chamada, 400.000 por dia) e revisar com os números da primeira execução real (tarefa 10).
