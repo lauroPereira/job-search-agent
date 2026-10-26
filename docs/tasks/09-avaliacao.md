@@ -18,9 +18,9 @@ Tarefas 04 a 07 concluídas.
 
 ## Passos
 
-1. Escrever os 20 casos (4 Network, 5 Vagas, 4 conhecimento, 4 recusa, 1 fora do escopo, 2 dado faltante) com os campos do plano, sobre o seed e `reference_date = "2026-03-16"`; `expected_args` das ferramentas de data incluem essa data.
+1. Escrever os 20 casos (4 Network, 5 Vagas, 4 conhecimento, 4 recusa, 1 fora do escopo, 2 dado faltante) com os campos do plano, sobre os dados de demonstração (`data/demo`) e `reference_date = "2026-03-16"`; `expected_args` das ferramentas de data incluem essa data.
 2. Roteiros do modelo simulado por caso e cache de embeddings dos documentos sintéticos e das consultas dos casos.
-3. `evals.py`: sobe o servidor com seed em pasta temporária, roda cada caso pelo grafo, calcula as métricas e imprime uma tabela; `--real` usa os modelos configurados e grava `evals/agent/results/<data>-<modelo>.md`.
+3. `evals.py`: sobe o servidor num banco temporário criado com os dados de `data/demo` (como `create_demo_db`), roda cada caso pelo grafo, calcula as métricas e imprime uma tabela; `--real` usa os modelos configurados e grava `evals/agent/results/<data>-<modelo>.md`.
 4. Fidelidade = toda citação da resposta está entre os trechos recuperados no turno (sem juiz por modelo).
 5. Passo no CI: `python -m job_search_agent.evals` sem `OPENAI_API_KEY`, falhando se alguma métrica do harness cair abaixo de 100%.
 

@@ -29,7 +29,7 @@ Tarefas 06 e 07 concluídas.
 
 - [ ] Teste: carregar os dados do dashboard grava só passos `tool` com origem `dashboard`, nenhum `model`.
 - [ ] Teste: `input_enabled` é falso com proposta pendente e verdadeiro depois da última decisão.
-- [ ] Verificação manual com o seed: um turno com duas propostas mostra um cartão por vez; a entrada fica desabilitada até a última decisão; recusa e confirmação funcionam pelos botões. Anotada aqui (capturas só com dados sintéticos).
+- [ ] Verificação manual com os dados de demonstração (`job-search-agent demo-db`): um turno com duas propostas mostra um cartão por vez; a entrada fica desabilitada até a última decisão; recusa e confirmação funcionam pelos botões. Anotada aqui (capturas só com dados sintéticos).
 - [ ] Toda resposta mostra tokens e custo.
 
 ## Validação

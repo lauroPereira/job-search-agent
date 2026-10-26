@@ -96,7 +96,7 @@ Uma aplicação local com um dashboard e um chat. O chat aceita pedidos em lingu
 - **Dados pessoais enviados ao provedor** no uso real. Mitigação: enviar só o necessário, mascarar dados pessoais, inclusive antes de gerar embeddings (Q1).
 - **Custo do modelo.** Mitigação: limites por turno e por dia, dashboard sem modelo, custo visível.
 - **Avaliação frágil:** mitigação: avaliar principalmente roteamento, ferramentas e argumentos (determinísticos).
-- **Dependência da `v0.2.0` do servidor:** o agente é testado com o servidor real, iniciado com o seed sintético num banco temporário, fixado no commit de `develop` que contém a versão 0.2.0 até a tag `v0.2.0` existir (Q5 do plano).
+- **Dependência da `v0.2.0` do servidor:** o agente é testado com o servidor real, num banco temporário com os dados sintéticos de demonstração (`data/demo`), fixado na tag `v0.2.0` (Q5 do plano).
 - **Mudança frequente de LangChain, LangGraph e Streamlit:** versões fixadas e conferidas antes de cada tarefa.
 
 ## Questões em aberto

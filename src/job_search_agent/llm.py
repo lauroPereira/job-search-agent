@@ -16,7 +16,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 
-from job_search_agent.config import CHAT_ROLES, Config, load_config
+from job_search_agent.config import CHAT_ROLES, Config, ConfigError, load_config
 
 
 def chat_model(role: str, config: Config) -> BaseChatModel:
@@ -72,7 +72,12 @@ def main(argv: list[str] | None = None) -> int:
     if not arguments.smoke:
         parser.print_help()
         return 0
-    return smoke(load_config())
+    try:
+        config = load_config()
+    except ConfigError as failure:
+        print(failure, file=sys.stderr)
+        return 1
+    return smoke(config)
 
 
 if __name__ == "__main__":

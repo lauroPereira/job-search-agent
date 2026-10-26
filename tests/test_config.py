@@ -1,5 +1,6 @@
 """Configuration: the example is valid and an invalid value fails with a clear message."""
 
+import codecs
 import tomllib
 from datetime import date
 from pathlib import Path
@@ -96,3 +97,14 @@ def test_invalid_toml_is_refused(tmp_path: Path) -> None:
     path.write_text("[models\n", encoding="utf-8")
     with pytest.raises(ConfigError, match="invalid TOML"):
         load_config(path)
+
+
+def test_file_with_bom_is_read(tmp_path: Path) -> None:
+    text = EXAMPLE.read_text(encoding="utf-8").replace(
+        "C:/caminho/absoluto/para/job-search-agent/data/local/job_search.db",
+        (tmp_path / "job_search.db").as_posix(),
+    )
+    path = tmp_path / "config.toml"
+    path.write_text(text, encoding="utf-8-sig")
+    assert path.read_bytes().startswith(codecs.BOM_UTF8)
+    assert load_config(path).server.db == tmp_path / "job_search.db"

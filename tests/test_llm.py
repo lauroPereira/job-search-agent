@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from job_search_agent import llm
-from job_search_agent.config import PROJECT_ROOT, parse_config
+from job_search_agent.config import PROJECT_ROOT, ConfigError, parse_config
 
 
 @pytest.fixture
@@ -34,3 +34,12 @@ def test_smoke_without_key_does_not_call(config, monkeypatch, capsys) -> None:
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     assert llm.smoke(config) == 2
     assert "OPENAI_API_KEY is not set" in capsys.readouterr().err
+
+
+def test_smoke_with_invalid_config_exits_with_message(monkeypatch, capsys) -> None:
+    def broken_config():
+        raise ConfigError("config.toml: missing section [limits]")
+
+    monkeypatch.setattr(llm, "load_config", broken_config)
+    assert llm.main(["--smoke"]) == 1
+    assert "missing section [limits]" in capsys.readouterr().err

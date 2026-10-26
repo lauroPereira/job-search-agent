@@ -3,6 +3,10 @@
 Every key of config.example.toml is required, except server.JOB_SEARCH_CONFIG. A missing or
 invalid value raises ConfigError with the section and key, so the app does not start with a
 wrong price, limit or database path.
+
+Premise: the project runs from its clone, installed in editable mode (pip install -e ".[dev]").
+PROJECT_ROOT is the clone root, where config.toml, .env, data/ and data/demo/ live; a
+non-editable install would point it to site-packages.
 """
 
 import tomllib
@@ -203,8 +207,8 @@ def load_config(path: Path = DEFAULT_CONFIG_PATH) -> Config:
     """Read config.toml and the local .env (without overriding variables already set)."""
     load_dotenv(ENV_PATH, override=False)
     try:
-        with open(path, "rb") as file:
-            data = tomllib.load(file)
+        # utf-8-sig accepts the BOM that some Windows editors write.
+        data = tomllib.loads(Path(path).read_text(encoding="utf-8-sig"))
     except FileNotFoundError:
         raise ConfigError(
             f"Configuration not found: {path}. Copy config.example.toml to config.toml "

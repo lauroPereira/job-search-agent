@@ -27,7 +27,7 @@ Tarefas 01 a 04 concluídas.
 
 ## Critérios de conclusão
 
-- [ ] Teste (servidor real com seed, modelo simulado): pedido de Network chega ao `network_agent` e chama `list_contacts`; pedido de Vagas chega ao `jobs_agent`.
+- [ ] Teste (servidor real com os dados de demonstração de `data/demo`, modelo simulado): pedido de Network chega ao `network_agent` e chama `list_contacts`; pedido de Vagas chega ao `jobs_agent`.
 - [ ] Teste: as ferramentas entregues a cada `create_agent` são as da tabela do plano.
 - [ ] Teste: pedido roteado para `refuse` não chama nenhuma ferramenta; saída inválida do roteador vira `out_of_scope`.
 - [ ] Teste: com `reference_date = "2026-03-16"`, a chamada roteirizada de `daily_summary` recebe essa data e o rastro a registra.

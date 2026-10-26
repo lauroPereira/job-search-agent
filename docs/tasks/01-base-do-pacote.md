@@ -91,6 +91,8 @@ Ele chama cada modelo de chat (`router` e `agent`) uma vez sem ferramenta e uma 
 
 **Achado para a tarefa 02:** `job-search-mcp --seed` não funciona com o servidor instalado do Git (instalação não editável): o servidor procura `data/seed/` relativo ao pacote (`.venv\Lib\data\seed`) e recusa com "install from a clone, with pip install -e .". O plano prevê os testes de integração com `--seed`; a forma de carregar o seed sintético fica para decisão do Supervisor na tarefa 02.
 
+**Achados da revisão (PR 3), corrigidos no PR 4:** textos de tarefas e especificação alinhados à dependência pela tag `v0.2.0` e aos dados de demonstração (`data/demo`, `job-search-agent demo-db`); `load_config` lê com `utf-8-sig` e aceita BOM (testado); `python -m job_search_agent.llm --smoke` com configuração inválida imprime o erro em stderr e devolve 1 (testado); premissa de rodar a partir do clone, com instalação editável, registrada no docstring de `config.py` (o README fica para a tarefa 10).
+
 ## Status
 
 ```text
