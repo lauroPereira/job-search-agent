@@ -1,22 +1,17 @@
 """Router and agents with the scripted model and the real server over the demo data."""
 
 import json
-import tomllib
 from datetime import date
-from pathlib import Path
 
 import pytest
-from langchain_core.embeddings import DeterministicFakeEmbedding
 from langchain_core.messages import AIMessage, SystemMessage
 
 from job_search_agent import graph as graph_module
 from job_search_agent import mcp_client, prompts
-from job_search_agent.config import PROJECT_ROOT, Server, parse_config
+from job_search_agent.config import Server
 from job_search_agent.costs import Usage
 from job_search_agent.graph import arun_turn, build_graph
-from job_search_agent.knowledge import build_index, knowledge_tool
 from job_search_agent.llm import ScriptedChatModel
-from job_search_agent.traces import TraceStore
 
 REFERENCE_DATE = date(2026, 3, 16)
 USAGE = {"input_tokens": 100, "output_tokens": 20, "total_tokens": 120}
@@ -68,26 +63,6 @@ def calls(*tool_calls: tuple[str, dict]) -> AIMessage:
 
 def answer(text: str) -> AIMessage:
     return AIMessage(text, usage_metadata=USAGE)
-
-
-@pytest.fixture
-def config(tmp_path: Path):
-    data = tomllib.loads((PROJECT_ROOT / "config.example.toml").read_text(encoding="utf-8"))
-    data["server"]["JOB_SEARCH_DB"] = str(tmp_path / "job_search.db")
-    return parse_config(data, root=tmp_path)
-
-
-@pytest.fixture(scope="module")
-def knowledge():
-    store = build_index(
-        PROJECT_ROOT / "data" / "knowledge", DeterministicFakeEmbedding(size=32), ()
-    )
-    return knowledge_tool(store)
-
-
-@pytest.fixture
-def traces(config) -> TraceStore:
-    return TraceStore(config.traces, config.masking_names)
 
 
 async def run(server: Server, config, traces, knowledge, router: list, agent: list, text: str):
@@ -197,7 +172,7 @@ async def test_write_proposal_goes_to_pending(fresh_server, config, traces, know
         text="Cadastre a vaga de Analytics Engineer do Banco Aurora",
     )
     assert result["status"] == "awaiting_approval"
-    assert [proposal["tool"] for proposal in result["pending"]] == ["add_job"]
+    assert result["proposal"]["tool"] == "add_job"
     assert traces.turn(result["turn_id"])["status"] == "awaiting_approval"
 
 

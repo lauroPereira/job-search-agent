@@ -54,3 +54,33 @@ DECLINE = {
 }
 
 BUDGET_EXCEEDED = "O pedido precisou de passos demais; tente dividir em pedidos menores."
+
+
+def decision_message(proposal: dict, decision: str, result: dict) -> str:
+    """What the person sees after confirming or discarding a proposal."""
+    tool = proposal.get("tool", "?")
+    code = result.get("error") if isinstance(result, dict) else None
+    if code is None and decision == "confirm":
+        changes = "; ".join(
+            f"{change['entity']}.{change['field']} = {change['new_value']}"
+            for change in proposal.get("changes", [])
+        )
+        return f"Confirmado ({tool}): gravado no servidor. {changes}".strip()
+    if code is None:
+        return f"Recusado ({tool}): nada foi gravado."
+    if code == "stale_proposal":
+        return (
+            f"A proposta ({tool}) ficou desatualizada: os registros mudaram desde que ela foi "
+            "feita, e nada foi gravado. Peça a alteração de novo para gerar uma nova proposta."
+        )
+    if code == "expired_proposal":
+        return f"A proposta ({tool}) expirou, e nada foi gravado. Peça a alteração de novo."
+    if code == "tool_error":
+        return (
+            f"Falha ao falar com o servidor ao decidir a proposta ({tool}); não sei se a decisão "
+            "foi aplicada. Confira os dados antes de pedir de novo."
+        )
+    detail = result.get("detail", "")
+    return (
+        f"Não foi possível concluir a decisão sobre a proposta ({tool}): {code}. {detail}".strip()
+    )
