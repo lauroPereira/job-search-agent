@@ -52,10 +52,11 @@ Cada arquivo começa com o bloco `---` / `kind`, `company`, `title` / `---` e av
 **Implementação** (`src/job_search_agent/knowledge.py`):
 
 - Divisão por cabeçalho `##`; seção acima de 1.500 caracteres é dividida por parágrafos. O texto antes do primeiro `##` (título e aviso de dado sintético) não é indexado: nos testes, esse trecho curto e sem conteúdo ficava à frente dos trechos úteis.
-- Texto do trecho = título do documento + título da seção + corpo, **mascarado** com `[masking] names` antes de ir aos embeddings; a consulta também é mascarada. O índice guarda só o texto mascarado, com `source` (caminho relativo, `data/knowledge/...`), `heading`, `kind` e `company`. Ids estáveis `source#n`.
+- Texto do trecho = título do documento + título da seção + corpo, **mascarado** com `[masking] names` antes de ir aos embeddings; a consulta também é mascarada. O índice guarda só o texto mascarado, com `source` (caminho relativo, `data/knowledge/...`) e `heading` também mascarados (e, por isso, a `citation` devolvida ao modelo), além de `kind` e `company` (nome de empresa fica). Ids estáveis `source#n` (só identificam o trecho na loja; não vão ao modelo).
 - `build_index`, `save_index` (`dump` em `data/local/knowledge_index.json`), `load_index` (sem arquivo: mensagem pedindo `job-search-agent index`).
 - `search(store, query, names, kind?, min_score)` e a ferramenta `search_knowledge(query, kind?)` (`knowledge_tool(store, names)`): até 4 trechos com `score >= MIN_SCORE`, cada um com `source`, `heading`, `kind`, `score`, `text` e `citation` pronta no formato do plano (`[fonte: data/knowledge/arquivo.md § título]`); nada acima do limiar: `{"results": [], "note": "sem base suficiente"}`; `kind` desconhecido: `{"error": "invalid_kind", ...}`.
-- `job-search-agent index` (`cli.py`): lê a configuração, exige `OPENAI_API_KEY` (sem ela sai com código 2, sem chamar nada), indexa com `llm.embeddings(config)` e grava o índice. Tokens dos embeddings não são estimados (a resposta da API de embeddings via LangChain não traz uso), como prevê o plano.
+- `job-search-agent index` (`cli.py`): lê a configuração, exige `OPENAI_API_KEY` (sem ela sai com código 2, sem chamar nada), indexa com `llm.embeddings(config)` e grava o índice. Tokens dos embeddings não são estimados (a resposta da API de embeddings via LangChain não traz uso), como prevê o plano; o comando imprime `tokens de embeddings: desconhecidos`.
+- O índice não detecta documentos alterados: depois de mudar `data/knowledge/`, rode `job-search-agent index` de novo.
 
 **Decisões**
 
@@ -83,6 +84,16 @@ grep -rEn '<e-mail>|<telefone>|<CPF>|linkedin\.com' data/knowledge  -> nenhuma o
 
 - Rodar `job-search-agent index` com a chave do autor e conferir a busca real (incluindo o limiar `MIN_SCORE`) — tarefa 10.
 - Cache de embeddings dos textos sintéticos em `evals/agent/fixtures/` para a avaliação sem chave — tarefas 09 e 10.
+
+> **Achados da revisão (PR 6), corrigidos no mesmo PR** (a branch recebeu antes, por merge, as correções do PR 5 em `feat/03-custo-e-rastro`):
+>
+> - (Média) `heading` e `source` iam sem máscara para os metadados do índice e para a `citation` devolvida ao modelo; um título de seção com nome ou e-mail ficava no `knowledge_index.json`. Agora `to_document` mascara os dois com `[masking] names`; a docstring de `knowledge.py` e a "Implementação" acima foram corrigidas. Limite: `source` é o caminho do arquivo, e a lista de nomes casa nomes separados por espaço, não por hífen; nomes de arquivo não devem trazer nome de pessoa (os versionados não trazem).
+> - (Baixa) `job-search-agent index` imprime `tokens de embeddings: desconhecidos` (a resposta via LangChain não traz uso).
+> - (Baixa) Registrado aqui, na docstring e no plano: o índice não detecta documentos alterados; rode `job-search-agent index` de novo após mudar `data/knowledge/`.
+>
+> Testes: `test_names_and_email_do_not_reach_the_embeddings` ganhou um segundo documento com título de seção "Retorno de Carla Fictícia (carla@example.com)" e confere o `heading` guardado (`Retorno de [pessoa] ([email])`), a `citation` devolvida e o arquivo de índice gravado com `save_index` (sem o nome, nem na forma `í`, sem o e-mail; com `[pessoa]` e `[email]`). Novo `test_index_command_reports_unknown_embedding_tokens` (embeddings simuladas, chave falsa, sem rede).
+>
+> Validação depois das correções: `lint_and_tests.py --strict` com 80 testes passando, ruff limpo, `ruff format --check src tests` com 18 arquivos formatados.
 
 ## Status
 

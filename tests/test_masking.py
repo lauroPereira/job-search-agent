@@ -26,6 +26,35 @@ def test_each_pattern_is_masked(text: str, expected: str) -> None:
 
 
 @pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("Celular 11 9 8765-4321", "Celular [telefone]"),
+        ("Celular +5511987654321", "Celular [telefone]"),
+        ("Celular +55 11 98765 4321", "Celular [telefone]"),
+        ("Celular 98765-4321", "Celular [telefone]"),
+        ("Fixo 21 3456 7890", "Fixo [telefone]"),
+        ("CPF 123 456 789 09 com espaços", "CPF [cpf] com espaços"),
+    ],
+)
+def test_other_phone_and_cpf_forms_are_masked(text: str, expected: str) -> None:
+    assert mask(text) == expected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Trabalhei de 2019-2023 no Banco Aurora",
+        "Período 2019 2023",
+        "Período 1998-2004",
+        "teste 1234 5678",
+        "Ramal 3456-7890 sem DDD",
+    ],
+)
+def test_year_ranges_and_number_pairs_stay(text: str) -> None:
+    assert mask(text) == text
+
+
+@pytest.mark.parametrize(
     "text",
     ["Conversei com Ana Exemplo", "conversei com ANA   exemplo", "Conversei com Âna Exêmplo"],
 )

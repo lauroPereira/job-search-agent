@@ -59,6 +59,8 @@ JOB_SEARCH_DB = "C:/caminho/absoluto/para/job-search-agent/data/local/job_search
 [masking]
 # Nomes de pessoas trocados por [pessoa] antes dos embeddings e no rastro.
 # Na demonstração, os nomes fictícios do seed do servidor; no uso real, preencha localmente.
+# No uso real, inclua também os primeiros nomes que aparecem sozinhos nas notas (por exemplo,
+# "Ana" além de "Ana Exemplo"): a lista casa só o texto exato, sem deduzir partes do nome.
 names = [
     "Ana Exemplo",
     "Bruno Modelo",

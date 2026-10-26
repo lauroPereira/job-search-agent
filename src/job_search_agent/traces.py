@@ -55,10 +55,24 @@ CREATE TABLE IF NOT EXISTS steps (
 """
 
 
+def _mask_texts(value: Any, names: tuple[str, ...]) -> Any:
+    """`value` with every text (keys included) masked, before the JSON escapes it."""
+    if isinstance(value, str):
+        return mask(value, names)
+    if isinstance(value, dict):
+        return {_mask_texts(str(k), names): _mask_texts(v, names) for k, v in value.items()}
+    if isinstance(value, list | tuple | set):
+        return [_mask_texts(item, names) for item in value]
+    return value
+
+
 def summarize(value: Any, names: tuple[str, ...]) -> str | None:
-    """JSON of `value` (text stays as is), masked and cut to MAX_SUMMARY characters."""
+    """JSON of `value` (text stays as is), masked and cut to MAX_SUMMARY characters. The texts
+    are masked before the JSON (a name broken by a line break would be escaped as `\\n`) and the
+    JSON once more (numbers and other values turned into text)."""
     if value is None:
         return None
+    value = _mask_texts(value, names)
     text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False, default=str)
     text = mask(text, names)
     return text if len(text) <= MAX_SUMMARY else text[: MAX_SUMMARY - 3] + "..."

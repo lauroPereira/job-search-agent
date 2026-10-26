@@ -17,8 +17,16 @@ PROFILE = re.compile(
     r"/[\w./%-]+",
     re.IGNORECASE,
 )
-CPF = re.compile(r"(?<![\w.-])\d{3}\.\d{3}\.\d{3}-\d{2}(?![\w-])|(?<!\d)\d{11}(?!\d)")
-PHONE = re.compile(r"(?<![\w+])(?:\+55\s?)?(?:\(\d{2}\)\s?|\d{2}\s)?9?\d{4}[-\s]\d{4}(?!\d)")
+CPF = re.compile(r"(?<![\w.-])\d{3}[.\s]\d{3}[.\s]\d{3}[-\s]\d{2}(?![\w-])|(?<!\d)\d{11}(?!\d)")
+# A pair of years ("2019-2023", "2019 2023") is not a phone number.
+_NOT_YEARS = r"(?!(?:19|20)\d\d[-\s](?:19|20)\d\d(?!\d))"
+# Mobile: 9 + 8 digits, area code optional. Landline (8 digits): area code required.
+PHONE = re.compile(
+    r"(?<![\w+])(?:\+55\s?)?"
+    r"(?:(?:\(\d{2}\)\s?|\d{2}\s?)?9(?:\s" + _NOT_YEARS + r")?\d{4}[-\s]?\d{4}"
+    r"|(?:\(\d{2}\)\s?|\d{2}\s)" + _NOT_YEARS + r"\d{4}[-\s]?\d{4})"
+    r"(?!\d)"
+)
 LONG_NUMBER = re.compile(r"(?<!\d)\d{8,}(?!\d)")
 
 # In order: the e-mail before the link and the CPF before the phone and the long number.

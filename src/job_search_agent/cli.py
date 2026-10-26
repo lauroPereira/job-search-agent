@@ -42,6 +42,8 @@ def index() -> int:
         return 1
     save_index(store, config.knowledge_index)
     print(f"Indexed {len(store.store)} masked chunks into {config.knowledge_index}.")
+    # The embeddings response through LangChain carries no usage.
+    print("tokens de embeddings: desconhecidos")
     return 0
 
 
