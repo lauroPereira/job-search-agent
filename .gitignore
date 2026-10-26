@@ -43,5 +43,6 @@ data/*.db
 *.csv
 !data/seed/*.csv
 !evals/**/*.csv
+!data/demo/*.csv
 chroma/
 traces/
