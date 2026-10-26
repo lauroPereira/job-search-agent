@@ -25,7 +25,7 @@ Tarefa 05 concluída.
 
 ## Critérios de conclusão
 
-- [ ] Teste de integração (servidor real com seed, modelo simulado): proposta de `update_job` recusada; leitura de `list_jobs` antes e depois igual; passo `approval` com `discard`.
+- [ ] Teste de integração (servidor real com os dados de demonstração de `data/demo`, modelo simulado): proposta de `update_job` recusada; leitura de `list_jobs` antes e depois igual; passo `approval` com `discard`.
 - [ ] Teste: proposta confirmada grava no servidor e o resultado aparece na resposta.
 - [ ] Teste: duas propostas no mesmo turno geram dois `interrupt` em sequência; confirmar a primeira e recusar a segunda grava só a primeira.
 - [ ] Teste: `stale_proposal` é mostrado sem nova tentativa.

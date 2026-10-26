@@ -1,0 +1,9 @@
+job_url,person,person_company,role,confirmed
+https://vagas.example.com/banco-aurora/data-engineer,Ana Exemplo,Banco Aurora,contact,true
+https://vagas.example.com/loja-horizonte/analytics-engineer,Bruno Modelo,Loja Horizonte,contact,true
+https://vagas.example.com/transportadora-pampa/ml-engineer,Carla Fictícia,Transportadora Pampa,contact,true
+https://vagas.example.com/hospital-arvoredo/data-engineer,Diego Amostra,Hospital Arvoredo,contact,true
+https://vagas.example.com/financeira-colibri/data-scientist,Elisa Teste,Financeira Colibri,contact,true
+https://vagas.example.com/construtora-granito/data-engineer,Fábio Demonstração,Construtora Granito,contact,true
+https://vagas.example.com/banco-aurora/data-engineer,Ana Exemplo,Banco Aurora,referrer,true
+https://vagas.example.com/hospital-arvoredo/data-engineer,Diego Amostra,Hospital Arvoredo,referrer,false

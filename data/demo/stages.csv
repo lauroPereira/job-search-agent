@@ -1,0 +1,10 @@
+job_url,kind,date,result,feedback
+https://vagas.example.com/editora-farol/data-analyst,hr,2026-02-25,passed,
+https://vagas.example.com/editora-farol/data-analyst,technical,2026-03-05,passed,
+https://vagas.example.com/editora-farol/data-analyst,manager,2026-03-14,pending,
+https://vagas.example.com/usina-solaris/ai-engineer,hr,2026-02-16,passed,
+https://vagas.example.com/usina-solaris/ai-engineer,technical,2026-02-23,passed,
+https://vagas.example.com/usina-solaris/ai-engineer,manager,2026-03-02,passed,
+https://vagas.example.com/usina-solaris/ai-engineer,offer,2026-03-10,pending,
+https://vagas.example.com/construtora-granito/data-engineer,hr,2026-02-12,passed,
+https://vagas.example.com/construtora-granito/data-engineer,technical,2026-02-25,failed,Faltou experiência com streaming

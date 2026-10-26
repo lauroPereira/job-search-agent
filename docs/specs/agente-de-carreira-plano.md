@@ -40,7 +40,8 @@ O agente depende do [job-search-mcp](https://github.com/lauroPereira/job-search-
 - A referência é a tag pública `v0.2.0` do servidor (Q5, resolvida na tarefa 01). Antes da tag, o plano fixava o commit `a5377b1` de `develop`.
 - O servidor fixa `fastmcp==4.1.0`, compatível com a faixa exigida por `langchain[mcp]`. Se um dia divergirem, o servidor roda em ambiente próprio e o agente só aponta o executável na configuração.
 - O agente inicia o servidor por stdio (`job-search-mcp`), com `JOB_SEARCH_DB` e, opcionalmente, `JOB_SEARCH_CONFIG` por caminho absoluto. O processo do servidor só recebe as variáveis passadas em `env` (o FastMCP não repassa o ambiente inteiro): a chave da OpenAI não chega ao servidor.
-- Testes de integração, a avaliação e o CI sobem o **servidor real** com `job-search-mcp --seed` num banco temporário. Não há servidor simulado: a `v0.2.0` já existe em `develop`.
+- Testes de integração, a avaliação e o CI sobem o **servidor real** num banco temporário com os dados de demonstração. Não há servidor simulado.
+- **Dados de demonstração (decisão do Supervisor, tarefa 02):** `job-search-mcp --seed` não funciona com o servidor instalado do Git (procura `data/seed/` ao lado do pacote instalado). O agente traz os próprios dados sintéticos em `data/demo/` (`companies.csv`, `people.csv`, `jobs.csv`, `stages.csv`, `links.csv`, no formato de importação do servidor, copiados do seed público da `v0.2.0`), e o banco é criado com `job-search-mcp import data/demo --apply` num arquivo novo apontado por `JOB_SEARCH_DB` (comando `job-search-agent demo-db`; nos testes, a fixture de `tests/conftest.py`). Isso também exercita a importação. Neste plano e nas tarefas, "seed" passa a significar esses dados de demonstração.
 
 ### Cliente MCP: `langchain.mcp` para os agentes, `fastmcp.Client` para chamadas diretas
 
@@ -51,7 +52,7 @@ O repositório [`langchain-mcp-adapters`](https://github.com/langchain-ai/langch
 - O namespace `langchain.mcp` está em **beta** (emite `LangChainBetaWarning`; a API pode mudar). Mitigação: todo uso fica em `mcp_client.py`; se quebrar, as ferramentas dos agentes passam a ser montadas a partir do `fastmcp.Client`.
 - O filtro de ferramentas por agente é do projeto (lista de nomes permitidos), porque `list_tools()` não tem filtro documentado.
 - Resultado estruturado: quando a ferramenta devolve conteúdo estruturado, o `ToolMessage.artifact` traz `structured_content`; é por ele que o grafo detecta `{"proposal": {...}}`. Erro de negócio do servidor é um objeto com `error` e `detail` (não `isError`), e volta ao modelo como resultado normal.
-- **Ciclo de vida do processo:** pela [documentação](https://docs.langchain.com/oss/python/langchain/mcp/connections.md), cada chamada de ferramenta abre e libera o cliente, a menos que o contexto do adaptador fique aberto. O agente mantém um contexto aberto durante o turno: **um processo do servidor por turno** (mais um para as chamadas diretas do turno, quando houver). O custo de partida por turno é um risco aceito (ver "Riscos técnicos").
+- **Ciclo de vida do processo:** pela [documentação](https://docs.langchain.com/oss/python/langchain/mcp/connections.md), cada chamada de ferramenta abre e libera o cliente, a menos que o contexto do adaptador fique aberto. O agente mantém um contexto aberto durante o turno: **um processo do servidor por turno** (mais um para as chamadas diretas do turno, quando houver). O custo de partida por turno é um risco aceito (ver "Riscos técnicos"). **Atualização (decisão do Supervisor, revisão do PR 4):** os nós do grafo recebem um `MCPAdapter` já aberto, e `changes_confirm`/`changes_discard` usam o `Client` exposto por `MCPAdapter.client`, sem segunda partida; a interface mantém **um processo do servidor por processo do Streamlit** (`st.cache_resource`, thread com event loop próprio, chamadas por `run_coroutine_threadsafe`, fechamento em `atexit`). A implementar nas tarefas 05, 06 e 08.
 
 ### Modelos da OpenAI (resolve Q2 da especificação)
 
@@ -100,6 +101,7 @@ config.example.toml            modelos, preços, limites, caminhos, servidor, no
 .env.example                   OPENAI_API_KEY=
 data/knowledge/                documentos sintéticos (Markdown com cabeçalho de metadados)
 data/local/                    (ignorado) checkpoints.db, traces.db, knowledge_index.json, banco do servidor
+data/demo/                     dados sintéticos de demonstração no formato de importação do servidor
 evals/agent/cases.toml         20 casos versionados
 evals/agent/fixtures/          roteiros do modelo simulado e cache de embeddings dos textos sintéticos
 evals/agent/results/           resultado de referência com o modelo real (Markdown, versionado)
@@ -239,7 +241,7 @@ Também: mascaramento (unidade); confirmação grava (integração); duas propos
 - **`langchain.mcp` em beta:** pode mudar entre versões. Mitigação: versão fixada, uso concentrado em `mcp_client.py`, plano B com `fastmcp.Client`.
 - **Modelos confirmados só na documentação:** os IDs `gpt-6-luna` e `gpt-6.1-sol` vêm das páginas oficiais de 2026-10-25, sem chamada real ainda. Mitigação: chamada mínima na tarefa 01; alternativa `gpt-5.4-mini` registrada.
 - **Ferramentas só pela Responses API:** se `use_responses_api=True` falhar com alguma ferramenta MCP, a tarefa 05 registra e troca o modelo dos agentes.
-- **Servidor iniciado a cada turno (risco aceito):** um processo stdio por turno, mais as chamadas diretas, custa a partida do Python e a abertura do banco (estimativa: menos de um segundo por partida, a medir na tarefa 02). Aceito na v0.1 pela simplicidade; se incomodar, um processo por sessão do Streamlit.
+- **Partida do servidor (risco aceito, revisto):** medida na tarefa 02: cerca de 2,3 s até a sessão pronta (quase tudo importação do Python e do FastMCP), mais 0,8 s na primeira chamada e 0,3 s no fechamento. Para não pagar isso a cada turno, a interface mantém um processo do servidor por processo do Streamlit e a aprovação usa o cliente do adaptador já aberto (ver "Ciclo de vida do processo"). Fica a partida única ao abrir a aplicação; nos testes e na avaliação, uma partida por contexto. Risco residual: um processo longo cuja falha precisa ser percebida pela interface (reabrir na próxima chamada).
 - **Streamlit com código assíncrono e `interrupt`:** cada clique reexecuta o script. Mitigação: `thread_id` e a proposta pendente no `st.session_state`; o estado verdadeiro está no checkpointer.
 - **Reexecução do nó de aprovação:** o código antes do `interrupt` roda de novo na retomada. Mitigação: `interrupt` como primeira instrução e efeitos só depois.
 - **Limite por turno aproximado:** o teto vem de passos e saída por chamada, não de um corte exato em tokens. Aceito: o uso real é medido e mostrado.

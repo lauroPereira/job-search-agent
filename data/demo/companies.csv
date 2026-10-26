@@ -1,0 +1,17 @@
+name,sector,priority,job_platform,notes
+Banco Aurora,Bancos,,Portal próprio,Indicação confirmada; prioridade ainda não definida
+Loja Horizonte,Varejo,B,,
+Seguradora Vértice,Seguros,,,
+Clínica Boreal,Saúde,C,,
+Transportadora Pampa,Logística,A,Portal próprio,Empresa-alvo
+Editora Farol,Mídia,C,,
+Usina Solaris,Energia,A,,Proposta em andamento
+Financeira Colibri,Finanças,A,,
+Mercado Jatobá,Varejo,B,,
+Escola Mirante,Educação,C,,
+Hospital Arvoredo,Saúde,B,,Indicação ainda não confirmada
+Pousada Maré Alta,Turismo,,,
+Construtora Granito,Construção,C,,
+Rádio Planalto,Mídia,,,
+Telecom Alvorada,Telecomunicações,,,
+Consultoria Tangará,Consultoria,,,
