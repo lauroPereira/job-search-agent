@@ -27,18 +27,103 @@ Tarefas 01 a 04 concluídas.
 
 ## Critérios de conclusão
 
-- [ ] Teste (servidor real com os dados de demonstração de `data/demo`, modelo simulado): pedido de Network chega ao `network_agent` e chama `list_contacts`; pedido de Vagas chega ao `jobs_agent`.
-- [ ] Teste: as ferramentas entregues a cada `create_agent` são as da tabela do plano.
-- [ ] Teste: pedido roteado para `refuse` não chama nenhuma ferramenta; saída inválida do roteador vira `out_of_scope`.
-- [ ] Teste: com `reference_date = "2026-03-16"`, a chamada roteirizada de `daily_summary` recebe essa data e o rastro a registra.
-- [ ] Teste: estouro de `recursion_limit` produz a resposta fixa e o status `budget_exceeded`.
+- [x] Teste (servidor real com os dados de demonstração de `data/demo`, modelo simulado): pedido de Network chega ao `network_agent` e chama `list_contacts`; pedido de Vagas chega ao `jobs_agent`.
+- [x] Teste: as ferramentas entregues a cada `create_agent` são as da tabela do plano.
+- [x] Teste: pedido roteado para `refuse` não chama nenhuma ferramenta; saída inválida do roteador vira `out_of_scope`.
+- [x] Teste: com `reference_date = "2026-03-16"`, a chamada roteirizada de `daily_summary` recebe essa data e o rastro a registra.
+- [x] Teste: estouro de `recursion_limit` produz a resposta fixa e o status `budget_exceeded`.
 
 ## Validação
 
-A preencher.
+Executada em 2026-10-25, Windows 11, `.venv` com Python 3.12 (versões da tarefa 01, sem mudança). Sem chave da OpenAI: tudo com o modelo simulado e o servidor real (`job-search-mcp` v0.2.0) sobre um banco temporário com os dados de `data/demo/`.
+
+**Implementação**
+
+- `llm.py`: `ScriptedChatModel(BaseChatModel)` devolve, em ordem, as mensagens do roteiro (`tool_calls` e `usage_metadata` inclusos), guarda em `received` cada lista de mensagens recebida e tem `bind_tools` que devolve o próprio modelo. O mesmo roteiro serve ao `create_agent` e à saída estruturada do roteador (uma chamada de ferramenta com o nome do esquema). Sem roteiro restante, falha com mensagem clara.
+- `prompts.py` (versão mínima): instruções do roteador com as quatro rotas, instruções comuns curtas, `agent_prompt(agent, reference_date)` com "Hoje é AAAA-MM-DD" e a instrução de passar `reference_date` a `daily_summary`, `pending_followups` e `jobs_funnel_metrics` (e como `date` quando a pessoa disser "hoje"), respostas fixas de `decline` (`refuse`, `out_of_scope`, `day_limit`) e a resposta de passos demais. Os fluxos e as regras completas são da tarefa 07.
+- `graph.py`:
+  - `build_graph(config, models, mcp, knowledge, traces, checkpointer=None)` recebe um `MCPAdapter` **já aberto**; as ferramentas de cada agente (`mcp_client.agent_tools` mais `search_knowledge`) são listadas uma vez na montagem; nenhum nó abre servidor.
+  - Estado `TurnState`: `messages`, `route`, `agent`, `origin`, `reference_date`, `pending`, `usage` (total do turno), `turn_id`, `status`. `decided` fica para a tarefa 06.
+  - `check_day_limit` (antes de `route`): soma do dia em `traces.db` (data local de hoje) contra `max_tokens_per_day`; excedido, vai a `decline` com a resposta fixa, status `budget_exceeded`, sem chamar modelo.
+  - `route`: `with_structured_output(RouteDecision, include_raw=True)` com `route: Literal["network", "jobs", "refuse", "out_of_scope"]`; o roteador vê só as instruções e o último pedido. Saída não reconhecida (texto, rota fora da lista) vira `out_of_scope`.
+  - `decline`: resposta fixa por código, status `declined`; sem modelo de redação e sem ferramentas.
+  - `network_agent` e `jobs_agent`: `create_agent(model, tools, system_prompt=agent_prompt(...), name=...)` criado a cada turno (o prompt leva a data do turno), executado com `astream(..., stream_mode="values")` e `recursion_limit` da configuração; `max_output_tokens` já vem de `llm.chat_model`. Em `GraphRecursionError`, a resposta é a fixa e o status `budget_exceeded`; os passos já feitos vão para o rastro, mas não para a conversa (uma chamada de ferramenta sem resultado quebraria o turno seguinte).
+  - Propostas extraídas dos `ToolMessage` (`extract_proposal`) vão para `pending`; com alguma, o turno termina em `awaiting_approval`.
+  - Rastro: um passo `model` por resposta de modelo (nome do modelo, tokens, custo pela tabela de preços, chamadas pedidas) e um passo `tool` por resultado (argumentos da chamada e texto do resultado, mascarados e resumidos).
+  - `arun_turn(graph, traces, config, text, thread_id=..., reference_date=..., origin=...)` (assíncrona) abre o turno no rastro, executa o grafo e fecha com status, rota, agente, tokens, custo e `over_turn_limit`; uma exceção fecha o turno como `error`. A versão síncrona com checkpointer (`run_turn`) é da tarefa 06.
+
+**Decisões**
+
+- `agent` no estado e no rastro é o nome do nó (`network_agent`, `jobs_agent`), também passado como `name` ao `create_agent`.
+- O agente é recriado a cada turno (barato: só compila o grafo interno) para levar a data de referência no prompt de sistema; as ferramentas não são relistadas.
+- O roteador recebe só o último pedido, sem o histórico, para manter o roteamento simples e barato.
+
+**Testes** (`tests/test_graph_routing.py`, 8 testes, servidor real com `data/demo/`):
+
+- pedido de Network → `network_agent`, que chama `list_contacts` no servidor real; passos `model` (roteador), `model`, `tool list_contacts`, `model` no rastro; nome do contato mascarado no resultado; tokens e custo do turno gravados;
+- pedido de Vagas → `jobs_agent`; o prompt de sistema recebido pelo modelo tem "Hoje é 2026-03-16"; a chamada roteirizada de `daily_summary` tem `reference_date = "2026-03-16"` no rastro, e o resultado do servidor é dessa data; `turns.reference_date` registrado;
+- ferramentas entregues a cada `create_agent` (espião em `graph.create_agent`) iguais à tabela do plano, escrita de novo no teste, mais `search_knowledge`;
+- `add_job` gera proposta em `pending` e status `awaiting_approval` (banco novo);
+- rota `refuse`, texto sem saída estruturada e rota fora da lista: `decline`, nenhum agente criado, nenhuma ferramenta, só o passo do roteador;
+- estouro de `recursion_limit` (agente roteirizado em laço de `list_contacts`): resposta fixa e status `budget_exceeded`, tokens gravados;
+- limite do dia já atingido no rastro: resposta fixa, nenhum modelo chamado, nenhum passo.
+
+```text
+.venv\Scripts\python.exe tools/scripts/lint_and_tests.py --strict   -> 75 passed; ruff limpo; validação estrita sem falhas
+.venv\Scripts\python.exe -m ruff format --check src tests          -> 21 files already formatted
+python -W error::Warning -c "import job_search_agent.graph"         -> sem aviso
+```
+
+**Pendências**
+
+- Conferir com o modelo real (chave do autor) a saída estruturada do roteador pela Responses API e a chamada de ferramentas MCP pelo `gpt-6.1-sol` (risco do plano) — tarefa 10, ou antes, na verificação manual da tarefa 07.
+- Nó de aprovação, checkpointer e `run_turn` síncrona — tarefa 06.
+
+### Correções da retomada em 2026-10-26
+
+O candidato da tarefa 05 foi preparado a partir de `develop` atualizado (`bc726df`), com a tarefa original (`ab0a9a0`) no merge pendente. A correção foi feita no workspace de integração, preservando a árvore original com o trabalho da tarefa 08. Não foram criados commits nem realizados pushes pelo Developer.
+
+**Comportamento corrigido**
+
+- As respostas de modelo são registradas durante o stream, antes da próxima etapa. Se o agente falhar, o rastro conserva os passos recebidos, os tokens de entrada/saída/cache, o custo, a rota, o agente e o indicador de limite por turno. O fechamento externo com `error` preserva esses valores. Os tokens de um turno com erro também contam para o limite diário.
+- As ferramentas são observadas individualmente pelos callbacks `on_tool_start`, `on_tool_end` e `on_tool_error`, do LangChain já instalado. Isso preserva a leitura ou proposta concluída mesmo quando outra ferramenta do mesmo lote falha antes de o nó produzir seu snapshot. Sucessos e erros passam pelo mesmo mascaramento do rastro; não há dupla gravação quando o lote conclui normalmente.
+- Uma proposta recebida antes de `GraphRecursionError` permanece em `pending`, com status `awaiting_approval`; sem proposta, continuam a resposta fixa e o status `budget_exceeded`. Se uma ferramenta falhar depois de outra ter produzido proposta no mesmo lote, a resposta fixa informa a falha e conserva a proposta aguardando decisão. Mensagens parciais de ferramenta não entram no histórico nesses caminhos.
+- Listas por domínio, assinaturas existentes, esquema SQLite e dependências foram preservados. O modelo continua sem ferramentas de confirmação/recusa. O nó de aprovação e o bloqueio da interface pertencem às tarefas seguintes.
+
+**Regressões e resultados**
+
+Foram acrescentados quatro casos a `tests/test_graph_routing.py`:
+
+1. Falha do modelo depois de `list_contacts`: mantém os passos, 200 tokens de entrada, 40 de saída, custo calculado, mascaramento e indicador de limite por turno; a próxima solicitação é bloqueada pelo limite diário.
+2. Limite de passos depois de `add_job`: mantém a proposta pendente, sem confirmar a gravação no servidor real.
+3. No mesmo lote, `list_contacts` conclui e `network_list_companies` falha: conserva os dois registros de ferramenta e o uso conhecido.
+4. No mesmo lote, `add_job` produz uma proposta e `list_jobs` falha: conserva a proposta para decisão, os dois registros de ferramenta e o uso conhecido. Estes dois últimos casos usam `create_agent` real, modelo e ferramentas sintéticos locais para controlar a ordem da falha; os demais testes de integração continuam usando o servidor real com `data/demo/`.
+
+Os dois primeiros casos falharam contra o código anterior (blob `77ca48780bfad83ac5ec11d2531b11b8cfee4991` carregado somente em memória), em 24,51 s, e passaram após a primeira correção. Os dois cenários de lote falharam contra essa correção parcial em 6,19 s e passaram após a captura individual em 3,15 s.
+
+Ambiente: Windows, Python 3.12.3 da `.venv` existente, versões fixadas sem alteração e servidor instalado 0.2.0. `PYTHONPATH` foi fixado no `src` do workspace de integração e o `graph.__file__` conferido antes da execução. `PYTHONDONTWRITEBYTECODE=1` e `PYTHON_DOTENV_DISABLED=1`; a validação completa executou sem chave da OpenAI e sem chamadas ao provedor. Uma tentativa restrita parou no `socketpair` interno ao criar o loop do asyncio; o dump identificou falha de ambiente anterior ao corpo do teste. As execuções com comunicação interna local autorizada concluíram.
+
+```text
+python -m pytest tests/test_graph_routing.py -k parallel_tool_failure -q
+  -> 2 passed, 10 deselected (3,15 s)
+python tools/scripts/lint_and_tests.py --strict
+  -> 92 passed (119,00 s); Ruff limpo; skills válidas; saída 0
+python -m ruff format --check --no-cache src/job_search_agent/graph.py tests/test_graph_routing.py
+  -> 2 files already formatted
+git -c core.fsmonitor=false diff --check
+git -c core.fsmonitor=false diff --cached --check
+  -> sem erros
+```
+
+Código validado (SHA-256):
+
+- `src/job_search_agent/graph.py`: `C2FB7A9A5BCDF23BE30C7DFAD80FEC0E3D82BB9A5347A3C696F538137E28C82D`.
+- `tests/test_graph_routing.py`: `C66E3057AEAC22FD5788C94892943862DED153F88488BD135B80D5335344A067`.
+
+Revisão técnica independente em 2026-10-26: **apto**, no candidato identificado pelos hashes acima. O Reviewer executou sete verificações próprias com `create_agent`, modelos e ferramentas sintéticos e armazenamento em memória: falha paralela de leitura, limite diário após erro, proposta antes de falha paralela, leitura sem duplicação, duas propostas no mesmo lote, falha posterior do modelo e limite de passos. Não executou MCP, suíte completa, modelo real nem QA visual nessa rodada. O Supervisor reconciliou esse parecer com a validação estrita do Developer; integração é uma ação posterior e precisa ter seu efeito confirmado.
 
 ## Status
 
 ```text
-pendente
+concluída
 ```

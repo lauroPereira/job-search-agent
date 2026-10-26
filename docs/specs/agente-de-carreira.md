@@ -1,6 +1,6 @@
 # Especificação: agente de carreira (v0.1)
 
-Status: **rascunho**, aguardando as questões em aberto. Cliente do servidor [job-search-mcp](https://github.com/lauroPereira/job-search-mcp), a partir da versão `v0.2.0` ("fonte única"). O modelo de domínios e a matriz de cobertura que orientam esta especificação estão no [modelo de domínios](https://github.com/lauroPereira/job-search-mcp/blob/develop/docs/specs/modelo-de-dominios.md) do servidor.
+Status: **em implementação**. As exceções Q3 e Q4 foram aceitas pelo autor na retomada de 2026-10-26. Cliente do servidor [job-search-mcp](https://github.com/lauroPereira/job-search-mcp), a partir da versão `v0.2.0` ("fonte única"). O modelo de domínios e a matriz de cobertura que orientam esta especificação estão no [modelo de domínios](https://github.com/lauroPereira/job-search-mcp/blob/develop/docs/specs/modelo-de-dominios.md) do servidor.
 
 ## Problema
 
@@ -103,6 +103,6 @@ Uma aplicação local com um dashboard e um chat. O chat aceita pedidos em lingu
 
 - **Q1. Embeddings:** decidido pelo autor em 2026-10-25: pela API da OpenAI. Consequência: os documentos indexados são enviados ao provedor; os dados pessoais que não forem necessários à busca são mascarados antes da indexação.
 - **Q2. Modelos:** resolvida no [plano técnico](agente-de-carreira-plano.md) com o catálogo e os preços da OpenAI de 2026-10-25: `gpt-6-luna` para roteamento, `gpt-6.1-sol` para os agentes de domínio (ferramentas e redação) e `text-embedding-3-small` para embeddings, pela Responses API; nomes e preços ficam na configuração. A confirmação por chamada real é feita na primeira tarefa.
-- **Q3. Leitura de apoio entre domínios:** exceção proposta pelo Supervisor, pendente de aceite do autor. O agente de Vagas lê `list_contacts` (filtro por empresa) e `network_company_overview` para dizer quem da rede está na empresa (caso de uso 3); a escrita continua exclusiva de cada domínio. O critério "cada agente só vê as ferramentas do seu domínio" é verificado contra a tabela de ferramentas do [plano](agente-de-carreira-plano.md).
-- **Q4. Origem da interação:** exceção proposta pelo Supervisor, pendente de aceite do autor. `log_interaction` não tem o parâmetro `source` no servidor `v0.2.0`; na v0.1, a origem de uma interação registrada fica no rastro do agente, e o parâmetro será pedido numa próxima versão do servidor. As demais escritas enviam a origem ao servidor.
+- **Q3. Leitura de apoio entre domínios:** aceita pelo autor em 2026-10-26. O agente de Vagas lê `list_contacts` (filtro por empresa) e `network_company_overview` para dizer quem da rede está na empresa (caso de uso 3); a escrita continua exclusiva de cada domínio. O critério "cada agente só vê as ferramentas do seu domínio" é verificado contra a tabela de ferramentas do [plano](agente-de-carreira-plano.md).
+- **Q4. Origem da interação:** aceita pelo autor em 2026-10-26. `log_interaction` não tem o parâmetro `source` no servidor `v0.2.0`; na v0.1, a origem de uma interação registrada fica no rastro do agente, e o parâmetro será pedido numa próxima versão do servidor. As demais escritas enviam a origem ao servidor.
 - **Q5 e Q6:** referência do servidor até a tag `v0.2.0` e valores iniciais dos limites de tokens, decididas pelo Supervisor e registradas no [plano](agente-de-carreira-plano.md#questões-em-aberto).
