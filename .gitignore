@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+config.toml
 *.key
 *.pem
 *.p12
@@ -19,6 +20,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .venv/
+*.egg-info/
 venv/
 
 # Configurações específicas do Obsidian

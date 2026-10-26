@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "job-search-agent"
+description = "Agente com chat e dashboards para gestão de busca de emprego, cliente do servidor job-search-mcp."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12,<3.13"
+dynamic = ["version"]
+dependencies = [
+    "langgraph==1.2.17",
+    "langgraph-checkpoint-sqlite==3.1.2",
+    "langchain[mcp]==1.4.7",
+    "langchain-core==1.7.0",
+    "langchain-openai==1.7.2",
+    "streamlit==1.66.1",
+    "python-dotenv==1.2.4",
+    "job-search-mcp @ git+https://github.com/lauroPereira/job-search-mcp.git@v0.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "ruff==0.17.2",
+]
+
+[project.scripts]
+job-search-agent = "job_search_agent.cli:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "job_search_agent.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+extend-select = ["I"]
