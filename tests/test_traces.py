@@ -74,6 +74,16 @@ def test_turn_is_recorded_masked_in_turns_and_steps(store: TraceStore, config) -
     assert "[pessoa]" in dump and "[email]" in dump and "Banco Aurora" in dump
 
 
+def test_name_with_line_break_is_masked_before_the_json(store: TraceStore) -> None:
+    turn_id = store.start_turn("thread-1", "oi")
+    store.add_step(
+        turn_id, "tool", "log_interaction", args={"notes": ["Falei com Ana\nExemplo hoje"]}
+    )
+    args = store.steps(turn_id)[0]["args"]
+    assert "Ana" not in args and "Exemplo" not in args
+    assert args == '{"notes": ["Falei com [pessoa] hoje"]}'
+
+
 def test_long_step_summary_is_cut(store: TraceStore) -> None:
     turn_id = store.start_turn("thread-1", "oi")
     store.add_step(turn_id, "tool", "list_jobs", result="x" * 2_000)

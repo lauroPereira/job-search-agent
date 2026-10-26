@@ -59,6 +59,17 @@ Executada em 2026-10-25, Windows 11, `.venv` com Python 3.12 (versões da tarefa
 .venv\Scripts\python.exe -m ruff format --check src tests          -> 16 files already formatted
 ```
 
+> **Achados da revisão (PR 5), corrigidos no mesmo PR:**
+>
+> - (Média) O padrão de telefone apagava intervalos de anos e pares de números ("Trabalhei de 2019-2023", "Período 2019 2023", "teste 1234 5678" viravam `[telefone]`). Agora o celular exige o prefixo 9 seguido de 8 dígitos (DDD opcional) e o número de 8 dígitos exige DDD explícito; um par de anos `(19|20)\d\d[-\s](19|20)\d\d` nunca é telefone. Um número de 8 dígitos sem DDD ("3456-7890") deixa de ser mascarado.
+> - (Baixa) `traces.summarize` mascara cada texto (chaves incluídas) antes do `json.dumps` e o JSON mais uma vez depois: um nome com quebra de linha não escapa mais como `\n`.
+> - (Baixa) Telefones e CPF em outras formas: "11 9 8765-4321" (espaço depois do 9) e "+5511987654321" viram `[telefone]` (antes, o segundo virava `+[numero]`); CPF com espaços "123 456 789 09" vira `[cpf]`.
+> - (Baixa) `config.example.toml`: comentário em `[masking] names` dizendo que, no uso real, os primeiros nomes que aparecem sozinhos também entram na lista.
+>
+> Testes novos: `test_other_phone_and_cpf_forms_are_masked` (6 casos), `test_year_ranges_and_number_pairs_stay` (5 casos, entre eles os anos da revisão e o fixo sem DDD) e `test_name_with_line_break_is_masked_before_the_json`; os exemplos de telefone que já passavam continuam em `test_each_pattern_is_masked`.
+>
+> Validação depois das correções: `lint_and_tests.py --strict` com 70 testes passando, ruff limpo, `ruff format --check src tests` limpo.
+
 ## Status
 
 ```text
