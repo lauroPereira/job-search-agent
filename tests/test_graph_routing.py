@@ -65,7 +65,16 @@ def answer(text: str) -> AIMessage:
     return AIMessage(text, usage_metadata=USAGE)
 
 
-async def run(server: Server, config, traces, knowledge, router: list, agent: list, text: str):
+async def run(
+    server: Server,
+    config,
+    traces,
+    knowledge,
+    router: list,
+    agent: list,
+    text: str,
+    origin="conversation",
+):
     """One turn; returns the result, the scripted models and the tools given to each agent."""
     models = {"router": ScriptedChatModel(script=router), "agent": ScriptedChatModel(script=agent)}
     given: dict[str, set[str]] = {}
@@ -86,7 +95,7 @@ async def run(server: Server, config, traces, knowledge, router: list, agent: li
                 text,
                 thread_id="thread-1",
                 reference_date=REFERENCE_DATE,
-                origin="conversation",
+                origin=origin,
             )
     finally:
         graph_module.create_agent = original

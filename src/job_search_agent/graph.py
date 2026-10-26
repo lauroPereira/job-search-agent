@@ -132,7 +132,9 @@ async def build_graph(
             agent = create_agent(
                 models["agent"],
                 tools[name],
-                system_prompt=prompts.agent_prompt(name, state["reference_date"]),
+                system_prompt=prompts.agent_prompt(
+                    name, state["reference_date"], state.get("origin")
+                ),
                 name=f"{name}_agent",
             )
             history = state["messages"]
