@@ -8,6 +8,8 @@ Every use of langchain.mcp stays in this module. The server process only receive
 of `Server.env()` (plus the safe defaults of the MCP SDK, such as PATH): no API key.
 """
 
+import csv
+import re
 import shutil
 import subprocess
 import sys
@@ -24,11 +26,18 @@ from mcp.client.stdio import get_default_environment
 from job_search_agent.config import PROJECT_ROOT, Server
 
 with warnings.catch_warnings():
-    # The namespace is in beta (accepted risk of the plan); the warning says only that.
-    warnings.simplefilter("ignore")
+    # The namespace is in beta (accepted risk of the plan); only that warning is silenced.
+    from langchain_core._api import LangChainBetaWarning
+
+    warnings.simplefilter("ignore", LangChainBetaWarning)
     from langchain.mcp import MCPAdapter
 
 DEMO_DIR = PROJECT_ROOT / "data" / "demo"
+DEMO_FILES = ("companies.csv", "people.csv", "jobs.csv", "stages.csv", "links.csv")
+# A line of the import report: "jobs.csv: 15 new, 0 duplicates, 0 with errors".
+REPORT_LINE = re.compile(
+    r"^(\S+\.csv): (\d+) new, (\d+) duplicates, (\d+) with errors$", re.MULTILINE
+)
 
 # Tools per consumer, as in the table of the plan ("Grafo").
 NETWORK_TOOLS = frozenset(
@@ -111,8 +120,12 @@ async def agent_tools(mcp: MCPAdapter, agent: str) -> list[BaseTool]:
 
 
 async def call(mcp_client: Client, tool: str, **arguments: Any) -> dict:
-    """Direct call without a model; returns the structured content (a business error is an
-    object with 'error' and 'detail', returned as is)."""
+    """Direct call without a model; returns the structured content.
+
+    A business error of the server is an object with 'error' and 'detail', returned as is. A
+    result with `isError` (protocol or unexpected server failure) raises
+    `fastmcp.exceptions.ToolError`.
+    """
     result = await mcp_client.call_tool(tool, arguments)
     return result.structured_content
 
@@ -129,21 +142,47 @@ def extract_proposal(message: ToolMessage) -> dict | None:
 def create_demo_db(server: Server, demo_dir: Path = DEMO_DIR) -> str:
     """Create the server database with the synthetic demo data, through the server import.
 
-    Refuses an existing database file, so demo data never goes into a database in use.
+    Refuses an existing database file, so demo data never goes into a database in use. Fails,
+    and removes the new database, when the import fails or its report does not show every row
+    of every file as new (no duplicates, no errors).
     """
     if server.db.exists():
         raise FileExistsError(f"{server.db} already exists; point JOB_SEARCH_DB to a new file")
     server.db.parent.mkdir(parents=True, exist_ok=True)
-    completed = subprocess.run(
-        [server_command(server.command), "import", str(demo_dir), "--apply"],
-        # The same variables a server process gets over stdio: safe defaults plus Server.env().
-        env=get_default_environment() | server.env(),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        check=False,
-    )
-    if completed.returncode != 0:
-        raise RuntimeError(f"Demo import failed: {completed.stderr.strip()}")
+    try:
+        completed = subprocess.run(
+            [server_command(server.command), "import", str(demo_dir), "--apply"],
+            # The same variables a server process gets over stdio: safe defaults plus Server.env().
+            env=get_default_environment() | server.env(),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            check=False,
+        )
+        if completed.returncode != 0:
+            raise RuntimeError(f"Demo import failed: {completed.stderr.strip()}")
+        check_import_report(completed.stdout, demo_dir)
+    except BaseException:
+        for suffix in ("", "-wal", "-shm", "-journal"):
+            Path(f"{server.db}{suffix}").unlink(missing_ok=True)
+        raise
     return completed.stdout
+
+
+def check_import_report(report: str, demo_dir: Path) -> None:
+    """Every row of every demo file must be new: no duplicates, no errors, all applied."""
+    counts = {
+        name: (int(new), int(duplicates), int(errors))
+        for name, new, duplicates, errors in REPORT_LINE.findall(report)
+    }
+    problems = []
+    for name in DEMO_FILES:
+        with open(demo_dir / name, encoding="utf-8", newline="") as file:
+            rows = sum(1 for _ in csv.DictReader(file))
+        if counts.get(name) != (rows, 0, 0):
+            problems.append(f"{name}: expected {rows} new, 0 duplicates, 0 errors")
+    if "Applied:" not in report:
+        problems.append("the report does not say the rows were applied")
+    if problems:
+        raise RuntimeError(f"Demo import incomplete: {'; '.join(problems)}\n{report}")

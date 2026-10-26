@@ -33,6 +33,8 @@ Tarefa 01 concluída.
 - **Ambiente do servidor:** o SDK de MCP junta ao `env` passado só as variáveis seguras de `get_default_environment()` (por exemplo `PATH` e `SYSTEMROOT`); `OPENAI_API_KEY` não passa (testado com um servidor de prova).
 - `changes_list_pending` fica em `UNUSED_TOOLS`: classificada, mas entregue a ninguém, como diz o plano.
 
+- **Ciclo de vida para as próximas tarefas (decisão do Supervisor, revisão do PR 4):** os nós do grafo recebem um `MCPAdapter` já aberto; `changes_confirm` e `changes_discard` usam o `Client` exposto por `MCPAdapter.client`, sem segunda partida do servidor; a interface manterá **um** processo do servidor por processo do Streamlit (`st.cache_resource`, thread com event loop próprio, chamadas por `run_coroutine_threadsafe`, fechamento em `atexit`). A implementar nas tarefas 05, 06 e 08; risco aceito atualizado no plano.
+
 ## Critérios de conclusão
 
 - [x] Teste de integração: os nomes entregues a Network e a Vagas são exatamente os da tabela do plano; Vagas recebe `list_contacts` e `network_company_overview` e nenhuma escrita de Network; nenhum agente recebe `changes_*`.
@@ -76,6 +78,15 @@ Testes de `tests/test_mcp_client.py`, todos contra o executável `job-search-mcp
 Quase toda a partida é importação de Python (só `import job_search_mcp.server` leva cerca de 2,4 s). Ficou acima da estimativa do plano (menos de 1 s): um turno com aprovação paga duas partidas (cerca de 5 a 7 s só de servidor). Continua sendo o risco aceito do plano; se incomodar na interface, a alternativa registrada é um processo por sessão do Streamlit. Registrado no plano.
 
 **API beta de `langchain.mcp` (langchain 1.4.7):** `from langchain.mcp import MCPAdapter` emite `LangChainBetaWarning`, que é silenciado só na importação em `mcp_client.py`. `MCPAdapter(target)` aceita um `StdioTransport`; `list_tools()` abre o contexto sozinho, e as ferramentas devolvidas são `StructuredTool` com `response_format="content_and_artifact"`; o artefato é `MCPToolArtifact` (`{"structured_content": ...}`), como o plano previa. Um resultado com `isError` vira `ToolMessage` com `status="error"`; o erro de negócio do servidor (`error` e `detail`) volta como resultado normal. O adaptador arma a elicitação com `interrupt()` do LangGraph, sem efeito aqui, porque o servidor não pede entrada. O processo do servidor escreve uma linha `INFO Starting MCP server` no stderr a cada partida.
+
+**Achados da revisão (PR 4), corrigidos no mesmo PR:**
+
+- (Média) `create_demo_db` confere o relatório da importação: cada arquivo de `data/demo/` precisa ter todas as linhas como novas, sem duplicatas nem erros, e a importação precisa dizer que gravou; senão falha e apaga o banco criado (e os arquivos `-wal`, `-shm` e `-journal`). Testes novos: `test_demo_database_has_the_demo_data` (15 vagas, 8 contatos, empresas do seed) e `test_demo_import_with_errors_fails_and_removes_the_database` (uma vaga com nota 99 faz a importação falhar e o banco não fica).
+- (Baixa) Docstring de `call`: um resultado com `isError` lança `fastmcp.exceptions.ToolError`; o erro de negócio (`error`/`detail`) volta como está.
+- (Baixa) Só `LangChainBetaWarning` é silenciado na importação de `langchain.mcp` (conferido com `python -W error::Warning -c "import job_search_agent.mcp_client"`).
+- Decisão de ciclo de vida do processo registrada em "Decisões" e no plano.
+
+Validação depois das correções: `lint_and_tests.py --strict` com 31 testes passando (10 em `tests/test_mcp_client.py`), ruff limpo, `ruff format --check src tests` limpo.
 
 ## Status
 

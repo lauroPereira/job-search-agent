@@ -1,5 +1,6 @@
 """Client of the real server: tools per agent, direct calls, proposals and environment."""
 
+import shutil
 import sys
 from pathlib import Path
 
@@ -136,3 +137,27 @@ async def test_api_key_does_not_reach_the_server(server: Server, monkeypatch) ->
 def test_demo_db_refuses_existing_database(server: Server) -> None:
     with pytest.raises(FileExistsError):
         mcp_client.create_demo_db(server)
+
+
+async def test_demo_database_has_the_demo_data(server: Server) -> None:
+    async with mcp_client.client(server) as client:
+        jobs = (await call(client, "list_jobs"))["jobs"]
+        contacts = (await call(client, "list_contacts"))["contacts"]
+        companies = await call(client, "network_list_companies")
+    assert len(jobs) == 15
+    assert len(contacts) == 8
+    assert "Banco Aurora" in str(companies)
+
+
+def test_demo_import_with_errors_fails_and_removes_the_database(tmp_path: Path) -> None:
+    demo = tmp_path / "demo"
+    shutil.copytree(mcp_client.DEMO_DIR, demo)
+    with open(demo / "jobs.csv", "a", encoding="utf-8") as file:
+        file.write(
+            "https://vagas.example.com/x/y,Empresa X,Cargo,data,99,"
+            "2026-03-01 09:00:00,applied,2026-03-02,,,,,\n"
+        )
+    server = Server(command="job-search-mcp", db=(tmp_path / "db" / "job_search.db").resolve())
+    with pytest.raises(RuntimeError, match="jobs.csv: expected 16 new"):
+        mcp_client.create_demo_db(server, demo)
+    assert not server.db.exists()
