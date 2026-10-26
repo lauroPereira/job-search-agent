@@ -123,17 +123,40 @@ def test_names_and_email_do_not_reach_the_embeddings(tmp_path: Path) -> None:
         "e com Carla Ficticia sobre o Banco Aurora.\n",
         encoding="utf-8",
     )
+    (directory / "outra.md").write_text(
+        "---\nkind: interview_note\ncompany: Banco Aurora\ntitle: Outra\n---\n\n"
+        "## Retorno de Carla Fictícia (carla@example.com)\n\nRetorno positivo do Banco Aurora.\n",
+        encoding="utf-8",
+    )
     embeddings = LexicalEmbeddings()
     store = build_index(directory, embeddings, NAMES, root=tmp_path)
-    search(store, "o que a Ana Exemplo disse? ana.exemplo@example.com", NAMES)
+    found = search(store, "o que a Ana Exemplo disse? ana.exemplo@example.com", NAMES, min_score=0)
+    feedback = search(store, "retorno positivo", NAMES, min_score=0)["results"]
+    assert found["results"] and feedback
 
     sent = "\n".join(embeddings.received)
     assert "[pessoa]" in sent and "[email]" in sent and "Banco Aurora" in sent
-    for personal in ("ANA EXEMPLO", "Ana Exemplo", "Carla Ficticia", "@example.com", "91234"):
+    personal_data = ("ANA EXEMPLO", "Ana Exemplo", "Carla Fic", "@example.com", "91234")
+    for personal in personal_data:
         assert personal not in sent
-    stored = next(iter(store.store.values()))
-    assert stored["metadata"]["source"] == "data/knowledge/nota.md"
-    assert "ANA EXEMPLO" not in stored["text"]
+    stored = {document["metadata"]["source"]: document for document in store.store.values()}
+    assert set(stored) == {"data/knowledge/nota.md", "data/knowledge/outra.md"}
+    assert (
+        stored["data/knowledge/outra.md"]["metadata"]["heading"] == "Retorno de [pessoa] ([email])"
+    )
+    assert "ANA EXEMPLO" not in stored["data/knowledge/nota.md"]["text"]
+
+    # The citation given to the model and the saved index file have no name or e-mail either.
+    citations = [result["citation"] for result in found["results"] + feedback]
+    assert "[fonte: data/knowledge/outra.md § Retorno de [pessoa] ([email])]" in citations
+    index_file = tmp_path / "knowledge_index.json"
+    save_index(store, index_file)
+    saved = index_file.read_text(encoding="utf-8")
+    assert "[pessoa]" in saved and "[email]" in saved
+    for personal in (*personal_data, "Carla Fict\\u00edcia"):
+        assert personal not in saved
+    for result in found["results"] + feedback:
+        assert all(personal not in str(result) for personal in personal_data)
 
 
 def test_versioned_documents_have_no_email_phone_or_cpf() -> None:
@@ -151,6 +174,23 @@ def test_index_command_without_key_does_not_call(tmp_path: Path, monkeypatch, ca
     assert cli.main(["index"]) == 2
     assert "OPENAI_API_KEY is not set" in capsys.readouterr().err
     assert not (tmp_path / "data" / "local" / "knowledge_index.json").exists()
+
+
+def test_index_command_reports_unknown_embedding_tokens(
+    tmp_path: Path, monkeypatch, capsys
+) -> None:
+    data = tomllib.loads((PROJECT_ROOT / "config.example.toml").read_text(encoding="utf-8"))
+    data["server"]["JOB_SEARCH_DB"] = str(tmp_path / "job_search.db")
+    config = parse_config(data, root=tmp_path)
+    config.knowledge_dir.mkdir(parents=True)
+    source = KNOWLEDGE_DIR / "empresa-banco-aurora.md"
+    (config.knowledge_dir / source.name).write_text(source.read_text(encoding="utf-8"), "utf-8")
+    monkeypatch.setattr(cli, "load_config", lambda: config)
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-fake")
+    monkeypatch.setattr("job_search_agent.llm.embeddings", lambda _config: LexicalEmbeddings())
+    assert cli.main(["index"]) == 0
+    assert "tokens de embeddings: desconhecidos" in capsys.readouterr().out
+    assert config.knowledge_index.exists()
 
 
 def test_missing_index_explains_what_to_do(tmp_path: Path) -> None:

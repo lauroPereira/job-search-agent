@@ -4,7 +4,10 @@
   between `---` lines and is split into chunks by `##` headings, with a size limit (the text
   before the first `##` is not indexed).
 - The chunk text is masked (`masking.mask` with `[masking] names`) BEFORE the embeddings; the
-  query too. The index keeps only the masked text.
+  query too. The `heading` and `source` of the index metadata (and so of the citation given to
+  the model) are masked as well: the saved index keeps no unmasked name or e-mail.
+- The index does not notice changed documents: run `job-search-agent index` again after changing
+  `data/knowledge/`.
 - `job-search-agent index` builds the index with the configured embeddings (OpenAI) and saves it to
   `data/local/knowledge_index.json`; the app loads it at start.
 - `search_knowledge` returns up to 4 chunks above `MIN_SCORE`, each with `source`, `heading` and a
@@ -100,13 +103,13 @@ def load_chunks(directory: Path, root: Path = PROJECT_ROOT) -> list[Chunk]:
 
 
 def to_document(chunk: Chunk, names: tuple[str, ...]) -> Document:
-    """The masked text that goes to the embeddings and to the index."""
+    """The masked text and metadata that go to the embeddings and to the index."""
     text = mask(f"{chunk.title}\n## {chunk.heading}\n{chunk.text}", names)
     return Document(
         page_content=text,
         metadata={
-            "source": chunk.source,
-            "heading": chunk.heading,
+            "source": mask(chunk.source, names),
+            "heading": mask(chunk.heading, names),
             "kind": chunk.kind,
             "company": chunk.company,
         },
