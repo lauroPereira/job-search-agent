@@ -3,6 +3,9 @@
 The rest of the project receives a BaseChatModel and an Embeddings, which also allows the
 simulated model of the tests and of the evaluation.
 
+`ScriptedChatModel` is the simulated model of the tests and of the evaluation: it returns scripted
+messages (with `tool_calls` and `usage_metadata`), without network.
+
 `python -m job_search_agent.llm --smoke` makes one minimal real call to each configured model
 (needs OPENAI_API_KEY in .env; never run in CI).
 """
@@ -10,11 +13,15 @@ simulated model of the tests and of the evaluation.
 import argparse
 import os
 import sys
+from typing import Any
 
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseChatModel
+from langchain_core.messages import AIMessage, BaseMessage
+from langchain_core.outputs import ChatGeneration, ChatResult
 from langchain_core.tools import tool
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from pydantic import Field
 
 from job_search_agent.config import CHAT_ROLES, Config, ConfigError, load_config
 
@@ -33,6 +40,34 @@ def chat_model(role: str, config: Config) -> BaseChatModel:
 
 def embeddings(config: Config) -> Embeddings:
     return OpenAIEmbeddings(model=config.models["embeddings"])
+
+
+class ScriptedChatModel(BaseChatModel):
+    """Simulated model: answers each call with the next message of `script`, in order.
+
+    `bind_tools` returns the model itself, so the same script serves `create_agent` and the
+    structured output of the router (a tool call named after the schema). Every list of messages
+    received is kept in `received`, so a test can check the prompts.
+    """
+
+    script: list[AIMessage]
+    received: list[list[BaseMessage]] = Field(default_factory=list)
+    position: int = 0
+
+    @property
+    def _llm_type(self) -> str:
+        return "scripted"
+
+    def _generate(self, messages: list[BaseMessage], stop=None, run_manager=None, **kwargs):
+        self.received.append(list(messages))
+        if self.position >= len(self.script):
+            raise RuntimeError(f"Scripted model has no answer left ({len(self.script)} used)")
+        message = self.script[self.position].model_copy(deep=True)
+        self.position += 1
+        return ChatResult(generations=[ChatGeneration(message=message)])
+
+    def bind_tools(self, tools: Any, **kwargs: Any) -> "ScriptedChatModel":
+        return self
 
 
 @tool
